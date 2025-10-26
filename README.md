@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Desafio de Matching de Hotéis + Enriquecimento via API
 
 ## Objetivo
@@ -41,3 +42,6 @@ curl -X POST http://localhost:8000/enrich -H 'Content-Type: application/json' \
 - Uso correto da API de enriquecimento e consistência dos dados.
 
 Boa sorte e bons experimentos! ✨
+=======
+# ds-matching-hotels
+>>>>>>> 9ea18a8f41072e592469e428728fb6e3da49d101
