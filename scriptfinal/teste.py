@@ -9,6 +9,8 @@ import re
 from Levenshtein import ratio as levenshtein_ratio
 import itertools
 import time
+import requests
+
 
 # ================================================================
 # 1. Leitura dos Dados
@@ -208,3 +210,164 @@ output_for_submission = final_df[['id_A', 'id_B', 'predicted_match']].copy()
 output_for_submission.to_csv('output.csv', index=False)
 
 print("\n Arquivo 'output.csv' salvo.")
+
+# ================================================================
+# 9. Enriquecimento dos Dados via API 
+# ================================================================
+print("\n" + "=" * 50)
+print("INICIANDO ETAPA DE ENRIQUECIMENTO DOS DADOS VIA API (REVISADO)")
+print("=" * 50)
+
+API_URL = "http://localhost:8000/enrich"
+API_HEALTH_URL = "http://localhost:8000/healthz"
+API_URL_AVAILABLE = False
+
+print(f"Verificando API mock em {API_HEALTH_URL}...")
+try:
+    health_check = requests.get(API_HEALTH_URL, timeout=5)
+    health_check.raise_for_status()
+    print("API mock está ok.")
+    API_URL_AVAILABLE = True
+except requests.exceptions.RequestException as e:
+    print(f"ERRO: Não foi possível conectar à API mock. Certifique-se de que está rodando. Detalhes: {e}")
+    print("Prosseguindo sem enriquecimento de dados da API. Os campos enriquecidos ficarão vazios.")
+
+# 1. Filtrar apenas os pares que tiveram match
+matched_pairs_df = final_df[final_df["predicted_match"] == 1].copy()
+
+# 2. Juntar com os dados originais de hotels_A e hotels_B para obter as infos de nome, cidade, país
+matched_pairs_with_details = matched_pairs_df.merge(
+    hotels_A[['id_A', 'hotel_name', 'city', 'country']],
+    on='id_A',
+    how='left'
+).rename(columns={
+    'hotel_name': 'hotel_name_A',
+    'city': 'city_A',
+    'country': 'country_A'
+})
+
+# Para o lado B
+matched_pairs_with_details = matched_pairs_with_details.merge(
+    hotels_B[['id_B', 'hotel_name', 'city', 'country']],
+    on='id_B',
+    how='left'
+).rename(columns={
+    'hotel_name': 'hotel_name_B',
+    'city': 'city_B',
+    'country': 'country_B'
+})
+
+
+# 3. Coletar os perfis únicos de hotéis (nome, cidade, país) DENTRE OS HOTÉIS QUE TIVERAM MATCH
+unique_matched_hotels_A_profiles = matched_pairs_with_details[['hotel_name_A', 'city_A', 'country_A']].drop_duplicates().rename(columns={
+    'hotel_name_A': 'hotel_name', 'city_A': 'city', 'country_A': 'country'
+})
+
+# Perfis do lado B que tiveram match
+unique_matched_hotels_B_profiles = matched_pairs_with_details[['hotel_name_B', 'city_B', 'country_B']].drop_duplicates().rename(columns={
+    'hotel_name_B': 'hotel_name', 'city_B': 'city', 'country_B': 'country'
+})
+
+# Combinar todos os perfis únicos de hotéis envolvidos em qualquer match
+all_unique_matched_hotels_to_enrich = pd.concat([unique_matched_hotels_A_profiles, unique_matched_hotels_B_profiles]).drop_duplicates().reset_index(drop=True)
+
+
+print(f"Total de pares com match: {len(matched_pairs_df)}")
+print(f"Total de perfis únicos de hotéis envolvidos nos matches para enriquecer: {len(all_unique_matched_hotels_to_enrich)}")
+print("Iniciando chamadas à API para enriquecimento...")
+
+enriched_results_lookup = {} # Dicionário para armazenar os resultados do enriquecimento
+
+if API_URL_AVAILABLE:
+    for index, row in all_unique_matched_hotels_to_enrich.iterrows():
+        payload = {
+            "hotel_name": row['hotel_name'],
+            "city": row['city'],
+            "country": row['country']
+        }
+        
+        # Criar uma chave única para o cache de resultados
+        enrichment_key = (row['hotel_name'], row['city'], row['country'])
+        
+        try:
+            response = requests.post(API_URL, json=payload, timeout=5)
+            response.raise_for_status()
+            enriched_info = response.json()
+            
+            # Armazenar os dados enriquecidos usando a chave
+            enriched_results_lookup[enrichment_key] = {
+                'enriched_category_stars': enriched_info.get('category_stars'),
+                'enriched_review_score': enriched_info.get('review_score'),
+                'enriched_amenities': ", ".join(enriched_info.get('amenities', []))
+            }
+            
+            if (index + 1) % 50 == 0:
+                print(f"  {index + 1}/{len(all_unique_matched_hotels_to_enrich)} perfis enriquecidos...")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Erro ao enriquecer hotel '{row['hotel_name']}' ({row['city']}, {row['country']}): {e}")
+            enriched_results_lookup[enrichment_key] = {
+                'enriched_category_stars': None,
+                'enriched_review_score': None,
+                'enriched_amenities': None
+            }
+        time.sleep(0.01)
+else:
+    print("API mock não está disponível. Pulando chamadas de enriquecimento.")
+    for index, row in all_unique_matched_hotels_to_enrich.iterrows():
+        enrichment_key = (row['hotel_name'], row['city'], row['country'])
+        enriched_results_lookup[enrichment_key] = {
+            'enriched_category_stars': None,
+            'enriched_review_score': None,
+            'enriched_amenities': None
+        }
+
+print("\nEnriquecimento via API concluído!")
+print("-" * 50)
+
+# 4. Criar um DataFrame de lookup a partir dos resultados enriquecidos
+enriched_df_map = pd.DataFrame([
+    {
+        'hotel_name_lookup': key[0],
+        'city_lookup': key[1],
+        'country_lookup': key[2],
+        **value 
+    } for key, value in enriched_results_lookup.items()
+])
+
+# 5. Unir os dados enriquecidos de volta ao DataFrame de pares com match
+# Primeiro, para o lado A do match
+final_matched_enriched = matched_pairs_with_details.merge(
+    enriched_df_map,
+    left_on=['hotel_name_A', 'city_A', 'country_A'],
+    right_on=['hotel_name_lookup', 'city_lookup', 'country_lookup'],
+    how='left'
+)
+final_matched_enriched.rename(columns={
+    'enriched_category_stars': 'enriched_category_stars_A',
+    'enriched_review_score': 'enriched_review_score_A',
+    'enriched_amenities': 'enriched_amenities_A'
+}, inplace=True)
+final_matched_enriched.drop(columns=['hotel_name_lookup', 'city_lookup', 'country_lookup'], inplace=True)
+
+# Em seguida, para o lado B do match
+final_matched_enriched = final_matched_enriched.merge(
+    enriched_df_map,
+    left_on=['hotel_name_B', 'city_B', 'country_B'],
+    right_on=['hotel_name_lookup', 'city_lookup', 'country_lookup'],
+    how='left',
+    suffixes=('_A_suffix', '_B_suffix')
+)
+final_matched_enriched.rename(columns={
+    'enriched_category_stars': 'enriched_category_stars_B',
+    'enriched_review_score': 'enriched_review_score_B',
+    'enriched_amenities': 'enriched_amenities_B'
+}, inplace=True)
+final_matched_enriched.drop(columns=['hotel_name_lookup', 'city_lookup', 'country_lookup'], inplace=True)
+
+# ================================================================
+# 10. Exportar o Resultado Final Enriquecido
+# ================================================================
+output_enriched_csv_path = 'output_final_enriquecido.csv'
+final_matched_enriched.to_csv(output_enriched_csv_path, index=False)
+print(f"\nArquivo '{output_enriched_csv_path}' salvo com os dados dos matches e enriquecimento.")
