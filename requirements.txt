@@ -1,0 +1,7 @@
+pandas
+numpy
+python-Levenshtein
+requests
+fastapi
+uvicorn
+pydantic

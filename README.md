@@ -1,47 +1,50 @@
-<<<<<<< HEAD
-# Desafio de Matching de Hotéis + Enriquecimento via API
+# Case Matching e Enriquecimento de Hotéis 
 
-## Objetivo
-Unir duas bases (`hotels_A.csv`, `hotels_B.csv`) **sem chave compartilhada** e construir um algoritmo de matching. Em seguida, **enriquecer** o resultado consultando uma **API externa simulada**.
+Este case demonstra a construção de um pipeline para identificar e consolidar registros de hotéis duplicados entre duas bases de dados, seguido pelo enriquecimento dos dados matchados via integração com uma API externa.
 
-## Arquivos
-- `data/hotels_A.csv`, `data/hotels_B.csv`: bases de origem com `id_A`/`id_B` e colunas descritivas.
-- `data/train.csv`: pares rotulados para treino/validação (`is_match` 0/1).
-- `evaluate.py`: calcula *precision*, *recall*, *F1* do seu `output.csv`.
-- `mock_api.py`: API FastAPI para enriquecimento (`/enrich`).
+## Solução
 
-## Como rodar
-```bash
-python -m venv .venv && source .venv/bin/activate
-# Windows (PowerShell)
-#.\.venv\Scripts\Activate.ps1
-# Windows (cmd)
-# .\.venv\Scripts\activate.bat
-pip install -U fastapi uvicorn pydantic pandas numpy
-# (Opcional) Subir API mock
-python mock_api.py
-# Avaliar uma submissão
-python evaluate.py --pred output.csv --truth data/train.csv --out metrics.json
-```
+*   Matching:Utilização de blocking (textual e geográfico) e métricas de similaridade (Levenshtein, Haversine) para identificar hotéis correspondentes.
+*   Enriquecimento Via API: Integração com uma API RESTful (simulada) para adicionar informações valiosas como classificação por review, pontuação de avaliações e comodidades aos hotéis que tiveram matching.
+*   Output Consolidado: Geração de um arquivo final que apresenta os hotéis que obtiveram matching com suas informações descritivas e enriquecidas de forma unificada.
 
-### Formato de saída esperado (`output.csv`)
-Colunas obrigatórias: `id_A,id_B,predicted_match` (0/1).  
-Você pode incluir colunas extras (ex.: `score`), serão ignoradas na métrica.
+## Executar o Projeto
 
-### Enriquecimento
-Com a API rodando localmente em `http://localhost:8000`:
-```bash
-curl -X POST http://localhost:8000/enrich -H 'Content-Type: application/json' \
-  -d '{"hotel_name":"Hotel Paulista","city":"São Paulo","country":"BR"}'
-```
+Siga estes passos para rodar a solução:
 
-## Critérios de Avaliação
-- Qualidade do matching (F1).
-- Escalabilidade (blocking, vetorização, paralelismo).
-- Limpeza de código, testes e reprodutibilidade.
-- Uso correto da API de enriquecimento e consistência dos dados.
+1.  **Clone o Repositório:**
+    ```bash
+    git clone https://github.com/FerreiraGabrielw/ds-matching-hotels.git
+    cd ds-matching-hotels
+    ```
 
-Boa sorte e bons experimentos! ✨
-=======
-# ds-matching-hotels
->>>>>>> 9ea18a8f41072e592469e428728fb6e3da49d101
+2.  **Configure o Ambiente:**
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate  # Windows: .\.venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+
+3.  **Inicie a Mock API:**
+    Abra um **novo terminal** (com o ambiente virtual ativado) e execute:
+    ```bash
+    python scripts/mock_api.py
+    ```
+    Mantenha este terminal aberto durante a execução do pipeline principal.
+
+4.  **Execute o Pipeline Principal:**
+    No terminal original (com o ambiente virtual ativado), execute:
+    ```bash
+    python src/hotel_matching_pipeline_gabrielferreira.py
+    ```
+
+Após a execução, os resultados serão:
+*   `output.csv`: Pares matchados (id_A, id_B, predicted_match) para avaliação F1.
+*   `output_final_enriquecido.csv`: O entregável final, com os dados dos hotéis matchados e enriquecidos.
+
+## Referências 
+
+Este projeto foi desenvolvido com o apoio dos seguintes materiais:
+
+*   **Data Matching in the Hotel Industry:** https://mtrdesign.medium.com/data-matching-in-the-hotel-industry-9d74a1f1951d
+*   **A Study of Machine Learning Based Approach for Hotels' Matching:** https://www.researchgate.net/publication/361714582_A_Study_of_Machine_Learning_Based_Approach_for_Hotels%27_Matching
