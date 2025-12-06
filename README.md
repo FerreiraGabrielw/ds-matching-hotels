@@ -51,7 +51,7 @@ The pipeline achieves **perfect accuracy (F1=1.0)** on validation, with ~150-200
 
 ## How to View the Full Analysis
 
-- **Online (HTML)**: Open [here](https://ferreiragabrielw.github.io/portfolio-gabriel/projetos/DataScience/3MatchingHoteis/MatchingHoteis.html) in your browser for interactive code, plots, and embedded video.
+- **Online (HTML)**: Open [here] (https://ferreiragabrielw.github.io/portfolio-gabriel/projetos/DataScience/3MatchingHoteis/MatchingHoteis.html) in your browser for interactive code, plots, and embedded video.
 - **Jupyter Notebook**: View [HotelsMatchingNotebook_gf.ipynb](notebook/HotelsMatchingNotebook_gf.ipynb) on GitHub or run locally (`jupyter notebook`).
 - **Locally (Quarto)**:
   1. Install Quarto and Python (with libraries from `requirements.txt`: `pip install -r requirements.txt`).
