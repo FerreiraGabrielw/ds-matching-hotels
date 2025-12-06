@@ -155,13 +155,13 @@ combinations = list(itertools.product(
 ))
 total_combinations = len(combinations)
 
-print(f"\n Iniciando busca dos melhores parâmetros ({total_combinations} combinações)...\n")
+print(f"\n Inicializing search for best parameters ({total_combinations} combinações)...\n")
 
 best_f1 = 0
 best_params = None
 
 for idx, (name_t, addr_t, dist_t) in enumerate(combinations, start=1):
-    print(f"→ Testando combinação {idx}/{total_combinations}: "
+    print(f"→ Testing Combinations {idx}/{total_combinations}: "
           f"name={name_t}, address={addr_t}, dist={dist_t}...", end="\r")
     
     temp_df = apply_matching_rules(
@@ -181,9 +181,9 @@ for idx, (name_t, addr_t, dist_t) in enumerate(combinations, start=1):
     
     time.sleep(0.1)
 
-print("\n\n Busca concluída!")
-print(f"Melhores parâmetros encontrados:")
-print(f"  Métricas: {best_params[3]}")
+print("\n\n Search Done!")
+print(f"Best Parameters Find:")
+print(f"  Metrics: {best_params[3]}")
 
 # ================================================================
 # 7. Aplicação Final com os Melhores Parâmetros
@@ -199,7 +199,7 @@ final_df = apply_matching_rules(
 
 final_metrics = calculate_metrics(final_df, train_truth_df)
 
-print("\nResultados finais:")
+print("\nFinal Results:")
 for k, v in final_metrics.items():
     print(f"{k}: {v}")
 
@@ -209,28 +209,28 @@ for k, v in final_metrics.items():
 output_for_submission = final_df[['id_A', 'id_B', 'predicted_match']].copy()
 output_for_submission.to_csv('output.csv', index=False)
 
-print("\n Arquivo 'output.csv' salvo.")
+print("\n File 'output.csv' save.")
 
 # ================================================================
 # 9. Enriquecimento dos Dados via API
 # ================================================================
 print("\n" + "=" * 50)
-print("INICIANDO ETAPA DE ENRIQUECIMENTO DOS DADOS VIA API")
+print("STARTING DATA ENRICHMENT STAGE VIA API")
 print("=" * 50)
 
 API_URL = "http://localhost:8000/enrich"
 API_HEALTH_URL = "http://localhost:8000/healthz"
 API_URL_AVAILABLE = False
 
-print(f"Verificando API mock em {API_HEALTH_URL}...")
+print(f"Checking API mock on {API_HEALTH_URL}...")
 try:
     health_check = requests.get(API_HEALTH_URL, timeout=5)
     health_check.raise_for_status()
-    print("API mock está ok.")
+    print("API is ok.")
     API_URL_AVAILABLE = True
 except requests.exceptions.RequestException as e:
-    print(f"ERRO: Não foi possível conectar à API mock. Certifique-se de que está rodando. Detalhes: {e}")
-    print("Prosseguindo sem enriquecimento de dados da API. Os campos enriquecidos ficarão vazios.")
+    print(f"ERROR: Could not connect to the mock API. Ensure it is running. Details: {e}")
+    print("Proceeding without API data enrichment. Enriched fields will remain empty.")
 
 # Criar um DataFrame auxiliar com os detalhes completos de hotels_A para fácil lookup
 hotels_A_details = hotels_A[['id_A', 'hotel_name', 'address', 'city', 'country', 'latitude', 'longitude', 'rating', 'reviews_count']].copy()
@@ -248,8 +248,8 @@ hotels_A_for_enrichment = matched_pairs_only_df.merge(
 # 3. Extrair os perfis únicos (hotel_name, city, country)
 unique_profiles_to_enrich = hotels_A_for_enrichment[['hotel_name', 'city', 'country']].drop_duplicates().reset_index(drop=True)
 
-print(f"Total de pares com match: {len(matched_pairs_only_df)}")
-print("Iniciando chamadas à API...")
+print(f"Total pairs with match: {len(matched_pairs_only_df)}")
+print("Starting API calls...")
 
 enriched_results_lookup = {} # Dicionário para armazenar os resultados do enriquecimento
 
@@ -271,8 +271,8 @@ if API_URL_AVAILABLE:
                 'enriched_amenities': ", ".join(enriched_info.get('amenities', [])) if enriched_info.get('amenities') else None
             }
             
-            if (index + 1) % 50 == 0:
-                print(f"  {index + 1}/{len(unique_profiles_to_enrich)} perfis enriquecidos...")
+            if (index + 1) % 25 == 0:
+                print(f"  {index + 1}/{len(unique_profiles_to_enrich)} profiles enriched......")
                 
         except requests.exceptions.RequestException as e:
             print(f"Erro ao enriquecer hotel '{row['hotel_name']}' ({row['city']}, {row['country']}): {e}")
@@ -292,7 +292,7 @@ else:
             'enriched_amenities': None
         }
 
-print("\nEnriquecimento via API concluído!")
+print("\nAPI enrichment completed!")
 print("-" * 50)
 
 # 4. Criar um DataFrame de lookup a partir dos resultados enriquecidos
@@ -351,4 +351,4 @@ df_final_consolidated = df_final_consolidated[final_columns_order]
 output_enriched_csv_path = 'output_final_enriquecido.csv'
 df_final_consolidated[df_final_consolidated['predicted_match'] == 1].to_csv(output_enriched_csv_path, index=False)
 
-print(f"\nArquivo '{output_enriched_csv_path}' salvo")
+print(f"\nFile '{output_enriched_csv_path}' save")

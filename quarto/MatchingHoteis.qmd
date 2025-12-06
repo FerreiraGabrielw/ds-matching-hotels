@@ -522,51 +522,52 @@ In production, replace with real endpoints (e.g., TripAdvisor API); here, it val
 
 The mock server runs locally (`uvicorn mock_api:app --host 0.0.0.0 --port 8000`). 
 
-
 ### Video Demonstration: API Enrichment Simulation
 
-To illustrate the end-to-end enrichment, the following screen recording demonstrates:
-1. Starting the mock API server (`python mock_api.py`).
-2. Health check via browser (`http://localhost:8000/healthz`).
-3. Batch POST requests (via curl/Postman) for sample matches (e.g., 3-5 unique hotels).
-4. Parsing JSON responses and merging into the enriched CSV.
-5. Previewing the final output in a viewer (e.g., Excel/VS Code).
+To illustrate the end-to-end pipeline and API enrichment, the following screen recording demonstrates:
 
-[Embed Video Here: Insert screen recording (MP4/GIF) via Quarto Markdown: `![API Enrichment Demo](path/to/your/video.mp4){width=80%}` or YouTube link: `<iframe src="https://www.youtube.com/embed/VIDEO_ID" width="800" height="450"></iframe>`]
-
-This visualization highlights seamless integration: From raw matches to enriched records, ready for downstream apps (e.g., dashboard filtering by "pet_friendly").
+{{< video pipeline_execution.mp4 >}}
 
 ## Enriched Output Visualization
 
-The final deliverable (`output_final_enriquecido.csv`) unifies matches with API data. Below is a styled preview (top 10 rows): Green highlights confirmed matches; amenities as comma-separated lists. This enables queries like "4+ star hotels with spa in São Paulo".
+The final deliverable unifies matches with API data.
 
 ```{python}
 # Load and style enriched output for visualization
 enriched_df = pd.read_csv('output_final_enriquecido.csv')
 styled_table = enriched_df.head(10).style \
-    .set_caption("Enriched Matches Preview (Top 10 Rows)") \
-    .background_gradient(subset=['category_stars', 'review_score'], cmap='YlGn') \
-    .apply(lambda row: ['background-color: #d4edda' if row['predicted_match'] == 1 else '' for _ in row], axis=1) \
+    .set_caption("Enriched Matches Sample)") \
+    .background_gradient(subset=['enriched_category_stars', 'enriched_review_score'], cmap='YlGn') \
+    .apply(lambda row: ['background-color: #a5b8eeff' if row['predicted_match'] == 1 else '' for _ in row], axis=1) \
     .set_properties(**{'text-align': 'left', 'font-size': '12px'}) \
-    .set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold'), ('background-color', '#f8f9fa')]}]) \
+    .set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold'), ('background-color', '#fdfdfdff')]}]) \
     .hide(axis='index')  # Clean view
 
 styled_table
 ```
 
-This table showcases unified profiles: e.g., ID A00076-B00065 (match=1) enriched with 4 stars, 8.5 score, "wifi, pool". Non-matches omitted; full CSV has ~150 rows. Export enables BI tools (e.g., Tableau for amenity heatmaps).
-
-
 # Conclusions
 
-## Technical Conclusions
+This project delivers a high-precision, production-ready entity resolution pipeline designed for real-world hotel data integration. By combining hierarchical blocking, geographic filtering, and interpretable similarity rules, the solution reduces a 185k pair search space by more than 90%, while still achieving perfect generalization (F1 = 1.0) on unseen data. The system handles address noise, naming inconsistencies, and GPS variations through a clean and efficient architecture that avoids the overhead of heavy machine learning models.
 
-This project delivers a robust, interpretable matching pipeline with state-of-the-art efficiency for entity resolution. Key achievements:
+Beyond technical excellence, the pipeline creates clear business value. Hospitality platforms depend on unified inventories—accurate hotel matching improves availability, price consistency, and personalization. Automating duplicate detection can reduce manual curation efforts by up to 90%, accelerate onboarding of new suppliers, and directly enhance user experience by powering richer filters and recommendations (e.g., pet-friendly, spa amenities). The enrichment step simulates how a real platform could integrate external services like Google Places or TripAdvisor to unlock new revenue levers such as dynamic ranking, quality scoring, or fraud detection.
 
-- **Robustness and Anti-Overfitting**: The 80/20 holdout (stratified split) validates generalization: F1=1.0 on unseen val_split (TP=50/50, FP/FN=0), with zero gap from train. This confirms thresholds (name=0.75, addr=0.50, geo=0.9km) capture intrinsic patterns (e.g., local clusters + name edits ≤25%), not dataset noise. Levenshtein excels on cleaned shorts (~0.9 avg. match sim); Haversine adds precision (1km threshold handles GPS variance). Strict/flexible rules balance evidence, achieving perfect recall/precision without ML complexity.
+Most importantly, the solution is scalable, interpretable, and deployment-ready. With lightweight rules, vectorized operations, and simple parallelization paths, the pipeline can scale to datasets 10–50× larger without architectural changes. For future work, the foundation supports hybrid ML models for edge cases, or real-time matching in streaming environments.
 
-- **Scalability**: Hierarchical blocking prunes 185k to ~5k candidates (90%+ reduction), enabling O(1k) Levenshtein ops (<10s runtime). For 10x scale (e.g., 10k hotels), parallelize with joblib or vectorize similarities (scipy.spatial.distance). No bottlenecks; deployable on cloud (e.g., AWS Lambda).
+In short, this project showcases the full data science lifecycle—from data quality assessment to algorithm design, optimization, validation, and API integration—while demonstrating how technical rigor directly translates into strategic impact in travel technology.
 
-- **Data Handling**: Cleaning (regex + set filter) boosts signal-to-noise (~20% sim. gain), preserving discriminatives (accents/numbers). EDA insights (e.g., zero nulls, urban geo-skew) informed decisions; frequency analysis empirically derived filters, avoiding over-removal.
+## References
+
+This project drew inspiration from the following resources, which informed the approach to entity resolution and machine learning applications in hotel data matching:
+
+- [Data Matching in the Hotel Industry](https://mtrdesign.medium.com/data-matching-in-the-hotel-industry-9d74a1f1951d){target="_blank" rel="noopener noreferrer"}: Insights on practical challenges and heuristics for integrating hotel datasets.
+
+- [A Study of Machine Learning Based Approach for Hotels' Matching](https://www.researchgate.net/publication/361714582_A_Study_of_Machine_Learning_Based_Approach_for_Hotels%27_Matching){target="_blank" rel="noopener noreferrer"}: Academic exploration of ML techniques, guiding the rule-based baseline and potential hybrid extensions.
+
+## GitHub Repository
+
+Access all code, datasets, notebooks, and files for this project:
+
+[Click here to access](https://github.com/FerreiraGabrielw/ds-matching-hotels){target="_blank" rel="noopener noreferrer"}
 
 ---
