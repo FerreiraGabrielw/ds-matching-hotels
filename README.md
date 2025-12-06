@@ -3,7 +3,7 @@
 ## Analysis Preview
 
 **Full and Detailed Analysis**:  
-Access the full project page [here](https://ferreiragabrielw.github.io/portfolio-gabriel/projetos/DataScience/3MatchingHoteis/MatchingHoteis.html)(interactive HTML with code, visuals, and video demo).
+Access the full project page [here] (https://ferreiragabrielw.github.io/portfolio-gabriel/projetos/DataScience/3MatchingHoteis/MatchingHoteis.html)(interactive HTML with code, visuals, and video demo).
 
 ## About the Project
 
