@@ -2,11 +2,8 @@
 
 ## Analysis Preview
 
-➡️ **Full and Detailed Analysis in My Portfolio**:  
+**Full and Detailed Analysis**:  
 Access the full project page [here](quarto/MatchingHoteis.html) (interactive HTML with code, visuals, and video demo).
-
-🚀 **Run the Pipeline Locally**:  
-Execute the end-to-end script [here](scripts/hotel_matching_pipeline_gabrielferreira.py) to generate matches and enriched data.
 
 ## About the Project
 

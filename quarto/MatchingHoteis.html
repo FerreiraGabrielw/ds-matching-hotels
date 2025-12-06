@@ -161,28 +161,27 @@ window.Quarto = {
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>This project tackles the challenge of merging two heterogeneous hotel datasets (<code>hotels_A.csv</code> and <code>hotels_B.csv</code>) without shared keys, mimicking real-world data integration in travel platforms (e.g., unifying listings from Booking.com and Expedia for personalized recommendations). The primary goals are: (1) develop a scalable matching algorithm using textual and geographic similarities to identify duplicate entities; and (2) enrich matched records via a simulated RESTful API, adding attributes like star ratings, review scores, and amenities.</p>
-<p>The solution employs rule-based heuristics optimized for efficiency: multi-level blocking to prune candidates, Levenshtein distance for string similarity, and Haversine formula for geolocation. A labeled training set (<code>train.csv</code>) enables hyperparameter tuning and validation, achieving a perfect F1-score of 1.0—even on unseen data via 80/20 holdout split—demonstrating strong generalization. This pipeline supports applications like duplicate detection, enhanced search, and improved user experiences in hospitality tech, reducing manual curation costs by up to 90% through automated matching.</p>
+<p>This project tackles the challenge of merging two heterogeneous hotel datasets (hotels_A.csv and hotels_B.csv) without shared keys, mimicking real-world data integration in travel platforms (e.g., unifying listings from Booking.com and Expedia for personalized recommendations). The primary goals are: (1) develop a scalable matching algorithm using textual and geographic similarities to identify duplicate entities; and (2) enrich matched records via a simulated RESTful API, adding attributes like star ratings, review scores, and amenities.</p>
+<p>The solution employs rule-based heuristics optimized for efficiency: multi-level blocking to prune candidates, Levenshtein distance for string similarity, and Haversine formula for geolocation. A labeled training set (train.csv) enables hyperparameter tuning and validation, achieving a perfect F1-score of 1.0—even on unseen data via 80/20 holdout split—demonstrating strong generalization. This pipeline supports applications like duplicate detection, enhanced search, and improved user experiences in hospitality tech, reducing manual curation costs by up to 90% through automated matching.</p>
 <p>Key innovations include hierarchical blocking (city-country + geo-radius) for computational savings and flexible matching rules to handle noisy real-world data (e.g., address variations). The project is production-ready, with a Jupyter notebook for exploration and a Python script for batch execution.</p>
 </section>
 <section id="project-structure" class="level1">
 <h1>Project Structure</h1>
-<p>The workflow follows an end-to-end data science pipeline: exploratory data analysis (EDA), preprocessing, candidate generation via blocking, similarity computation, threshold optimization with cross-validation, entity matching, API enrichment, and evaluation. Implementation uses Python (Pandas, NumPy, Levenshtein) and is deployable as a standalone script. Dependencies are managed via <code>requirements.txt</code>, with a mock FastAPI for enrichment simulation.</p>
+<p>The workflow follows an end-to-end data science pipeline: exploratory data analysis (EDA), preprocessing, candidate generation via blocking, similarity computation, threshold optimization with cross-validation, entity matching, API enrichment, and evaluation. Implementation uses Python (Pandas, NumPy, Levenshtein) and is deployable as a standalone script. Dependencies are managed via requirements.txt, with a mock FastAPI for enrichment simulation.</p>
 <section id="data-sources" class="level2">
 <h2 data-anchor-id="data-sources">Data Sources</h2>
 <ul>
-<li><code>hotels_A.csv</code> and <code>hotels_B.csv</code>: Core datasets with 436 and 425 records, respectively, featuring attributes like <code>id</code>, <code>hotel_name</code>, <code>address</code>, <code>city</code>, <code>country</code>, <code>latitude</code>, <code>longitude</code>, <code>rating</code> (2.3-5.0 scale), and <code>reviews_count</code> (1-1,360).</li>
-<li><code>train.csv</code>: Labeled pairs (332 total) for supervised validation, with <code>id_A</code>, <code>id_B</code>, and <code>is_match</code> (0/1; ~75% positives, reflecting synthetic duplicates).</li>
-<li>Mock API (<code>mock_api.py</code>): Simulates external enrichment, returning deterministic attributes (stars: 3-5; score: 7.0-9.7; amenities: e.g., “wifi, pool”) based on hashed inputs.</li>
+<li>hotels_A.csv and hotels_B.csv: Core datasets with 436 and 425 records, respectively, featuring attributes like id, hotel_name, address, city, country, latitude, longitude, rating, and reviews_count (1-1,360).</li>
+<li>train.csv: Labeled pairs (332 total) for supervised validation, with id_A, id_B, and is_match (0/1).;</li>
+<li>Mock API (mock_api.py): Simulates external enrichment, returning deterministic attributes (stars: 3-5; score: 7.0-9.7; amenities: e.g., “wifi, pool”) based on hashed inputs.</li>
 </ul>
 </section>
 </section>
 <section id="exploratory-data-analysis-eda" class="level1">
 <h1>Exploratory Data Analysis (EDA)</h1>
-<p>EDA confirms data quality and identifies preprocessing needs. Both datasets are clean (no nulls/duplicates), with consistent schemas and geographic focus (Europe/Brazil cities). Ratings show moderate variance (mean ~4.0), while reviews skew low (median ~400), typical for simulated listings. High match rate in train (~75%) suggests designed positives, but blocking is crucial to avoid O(n²) explosion (185k+ pairs).</p>
 <section id="dataset-info-for-hotels_a" class="level6">
 <h6 data-anchor-id="dataset-info-for-hotels_a">Dataset Info for hotels_A:</h6>
-<div id="7f117857" class="cell" data-execution_count="2">
+<div id="e4bc4954" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>hotels_A.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -209,7 +208,7 @@ memory usage: 30.8+ KB</code></pre>
 </section>
 <section id="dataset-info-for-hotels_b" class="level6">
 <h6 data-anchor-id="dataset-info-for-hotels_b">Dataset Info for hotels_B:</h6>
-<div id="b28cd3c3" class="cell" data-execution_count="3">
+<div id="4e74c859" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>hotels_B.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -236,7 +235,7 @@ memory usage: 30.0+ KB</code></pre>
 </section>
 <section id="count" class="level6">
 <h6 data-anchor-id="count">Count:</h6>
-<div id="66430a2b" class="cell" data-execution_count="4">
+<div id="42783be5" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Counts:</span><span class="ch">\n</span><span class="st">"</span>, hotels_A.count())</span>
@@ -272,7 +271,7 @@ dtype: int64</code></pre>
 <h2 data-anchor-id="data-quality-checks">Data Quality Checks</h2>
 <section id="null-and-duplicate-check" class="level6">
 <h6 data-anchor-id="null-and-duplicate-check">Null and Duplicate Check:</h6>
-<div id="ef9a8892" class="cell" data-execution_count="5">
+<div id="13040b5e" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Nulls in hotels_A:</span><span class="ch">\n</span><span class="st">"</span>, hotels_A.isnull().<span class="bu">sum</span>())</span>
@@ -314,7 +313,7 @@ Duplicates in hotels_B: 0</code></pre>
 </section>
 <section id="unique-countries-and-cities" class="level6">
 <h6 data-anchor-id="unique-countries-and-cities">Unique Countries and Cities:</h6>
-<div id="a7547b75" class="cell" data-execution_count="6">
+<div id="27cf4424" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"=== HOTELS A ==="</span>)</span>
@@ -345,12 +344,12 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </section>
 <section id="sample-hotels_a" class="level6">
 <h6 data-anchor-id="sample-hotels_a">Sample (hotels_A):</h6>
-<div id="d875197b" class="cell" data-execution_count="7">
+<div id="dd6daee4" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>hotels_A.sample(<span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="28">
+<div class="cell-output cell-output-display" data-execution_count="133">
 <div>
 
 
@@ -371,64 +370,64 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </thead>
 <tbody>
 <tr class="odd">
-<td data-quarto-table-cell-role="th">39</td>
-<td>A00039</td>
-<td>Residency Cathedral II</td>
-<td>Avenida da Sé, 9556</td>
-<td>Porto Alegre</td>
+<td data-quarto-table-cell-role="th">290</td>
+<td>A00290</td>
+<td>Inn Lumière Saint</td>
+<td>Avenue Copacabana, 8681</td>
+<td>Rio de Janeiro</td>
 <td>BR</td>
-<td>-30.061022</td>
-<td>-51.203027</td>
-<td>4.0</td>
-<td>72</td>
+<td>-22.941185</td>
+<td>-43.050535</td>
+<td>4.3</td>
+<td>372</td>
 </tr>
 <tr class="even">
-<td data-quarto-table-cell-role="th">328</td>
-<td>A00328</td>
-<td>Residency Central</td>
-<td>Praça da Sé, 991</td>
-<td>Lisboa</td>
-<td>PT</td>
-<td>38.758657</td>
-<td>-9.123714</td>
-<td>5.0</td>
-<td>898</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">318</td>
-<td>A00318</td>
-<td>Europa</td>
-<td>Praça Liberdade, 137</td>
-<td>Barcelona</td>
-<td>ES</td>
-<td>41.407263</td>
-<td>2.062158</td>
-<td>4.2</td>
-<td>630</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">351</td>
-<td>A00351</td>
-<td>Suites Central</td>
-<td>Rua dos Andradas, 2295</td>
+<td data-quarto-table-cell-role="th">139</td>
+<td>A00139</td>
+<td>Pousada Liberdade II</td>
+<td>Street dos Andradas, 1991</td>
 <td>Porto</td>
 <td>PT</td>
-<td>41.210350</td>
-<td>-8.636415</td>
-<td>3.9</td>
-<td>288</td>
+<td>41.114342</td>
+<td>-8.564120</td>
+<td>3.6</td>
+<td>272</td>
 </tr>
 <tr class="odd">
-<td data-quarto-table-cell-role="th">326</td>
-<td>A00326</td>
-<td>Pousada Cathedral II &amp; Spa</td>
-<td>Street Augusta, 5627</td>
-<td>Porto Alegre</td>
+<td data-quarto-table-cell-role="th">162</td>
+<td>A00162</td>
+<td>Palace Central</td>
+<td>Avenida Copacabana, 3565</td>
+<td>Belo Horizonte</td>
 <td>BR</td>
-<td>-30.038423</td>
-<td>-51.249107</td>
-<td>4.3</td>
-<td>694</td>
+<td>-19.939555</td>
+<td>-43.944223</td>
+<td>4.5</td>
+<td>842</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">220</td>
+<td>A00220</td>
+<td>Grand Hotel Gaudí II</td>
+<td>Street da Sé, 2462</td>
+<td>Barcelona</td>
+<td>ES</td>
+<td>41.386866</td>
+<td>2.273828</td>
+<td>3.3</td>
+<td>864</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">260</td>
+<td>A00260</td>
+<td>Palace Central Saint</td>
+<td>Avenida Paulista 6032</td>
+<td>São Paulo</td>
+<td>BR</td>
+<td>-23.534311</td>
+<td>-46.536732</td>
+<td>4.0</td>
+<td>475</td>
 </tr>
 </tbody>
 </table>
@@ -439,12 +438,12 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </section>
 <section id="sample-hotels_b" class="level6">
 <h6 data-anchor-id="sample-hotels_b">Sample (hotels_B):</h6>
-<div id="971477d4" class="cell" data-execution_count="8">
+<div id="f1d82087" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>hotels_B.sample(<span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="29">
+<div class="cell-output cell-output-display" data-execution_count="134">
 <div>
 
 
@@ -465,64 +464,64 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </thead>
 <tbody>
 <tr class="odd">
-<td data-quarto-table-cell-role="th">207</td>
-<td>B00207</td>
-<td>Suites Gaudí</td>
-<td>Avenida Europa, 8570</td>
-<td>São Paulo</td>
-<td>BR</td>
-<td>-23.579845</td>
-<td>-46.582604</td>
-<td>4.4</td>
-<td>527</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">176</td>
-<td>B00176</td>
-<td>Inn Lumière</td>
-<td>Street Augusta, 1391</td>
+<td data-quarto-table-cell-role="th">356</td>
+<td>B00356</td>
+<td>Inn Liberdade</td>
+<td>Praça Augusta, 2467</td>
 <td>Belo Horizonte</td>
 <td>BR</td>
-<td>-19.924789</td>
-<td>-43.942100</td>
-<td>4.5</td>
-<td>493</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">218</td>
-<td>B00218</td>
-<td>Palace Augusta II</td>
-<td>Rua Copacabana, 6257</td>
-<td>Barcelona</td>
-<td>ES</td>
-<td>41.359492</td>
-<td>2.159999</td>
-<td>4.1</td>
-<td>751</td>
+<td>-20.025363</td>
+<td>-43.880843</td>
+<td>4.3</td>
+<td>666</td>
 </tr>
 <tr class="even">
-<td data-quarto-table-cell-role="th">300</td>
-<td>B00300</td>
-<td>Hotel Augusta Saint</td>
-<td>Avenida Augusta 2556</td>
+<td data-quarto-table-cell-role="th">95</td>
+<td>B00095</td>
+<td>Suites Cathedral II &amp; Spa</td>
+<td>Avenida Central, 1192</td>
 <td>Barcelona</td>
 <td>ES</td>
-<td>41.418695</td>
-<td>2.187372</td>
-<td>4.3</td>
-<td>13</td>
+<td>41.419385</td>
+<td>2.214811</td>
+<td>4.7</td>
+<td>321</td>
 </tr>
 <tr class="odd">
-<td data-quarto-table-cell-role="th">323</td>
-<td>B00323</td>
-<td>Suites Lumière &amp; Spa</td>
-<td>Avenue dos Andradas, 8093</td>
+<td data-quarto-table-cell-role="th">1</td>
+<td>B00001</td>
+<td>Pousada Paulista</td>
+<td>Avenue das Flores, 1830</td>
+<td>Madrid</td>
+<td>ES</td>
+<td>40.358635</td>
+<td>-3.730172</td>
+<td>4.0</td>
+<td>603</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">187</td>
+<td>B00187</td>
+<td>Palace Liberdade</td>
+<td>Avenida Augusta, 7312</td>
+<td>Curitiba</td>
+<td>BR</td>
+<td>-25.467384</td>
+<td>-49.191542</td>
+<td>3.6</td>
+<td>545</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">67</td>
+<td>B00067</td>
+<td>Hotel Lumière</td>
+<td>Praça Paulista, 5259</td>
 <td>Rio de Janeiro</td>
 <td>BR</td>
-<td>-22.898968</td>
-<td>-43.189539</td>
-<td>4.7</td>
-<td>815</td>
+<td>-22.863119</td>
+<td>-43.135006</td>
+<td>4.2</td>
+<td>609</td>
 </tr>
 </tbody>
 </table>
@@ -530,6 +529,7 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </div>
 </div>
 </div>
+<p>EDA confirms data quality and identifies preprocessing needs. Both datasets are clean (no nulls/duplicates), with consistent schemas and geographic focus (Europe/Brazil cities).</p>
 <p>Samples reveal noise: Generic prefixes (“Inn”, “Grand”), abbreviations (“St.”, “Av.”), and numbers in addresses. This motivates targeted cleaning to boost Levenshtein accuracy</p>
 </section>
 </section>
@@ -540,7 +540,7 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 <section id="word-frequency-analysis-for-noise-detection" class="level4">
 <h4 data-anchor-id="word-frequency-analysis-for-noise-detection">Word Frequency Analysis for Noise Detection</h4>
 <p>Concatenated names/addresses, cleaned basically, and ranked words to spot non-discriminatives.</p>
-<div id="21cb2025" class="cell" data-execution_count="9">
+<div id="4db40d76" class="cell" data-execution_count="9">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>all_names_addresses <span class="op">=</span> pd.concat([</span>
@@ -624,7 +624,7 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </ul>
 <section id="list-with-terms-to-remove" class="level6">
 <h6 data-anchor-id="list-with-terms-to-remove">List with terms to remove</h6>
-<div id="b31e0277" class="cell" data-execution_count="10">
+<div id="286f3f32" class="cell" data-execution_count="10">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>common_terms_to_remove <span class="op">=</span> [</span>
@@ -643,7 +643,7 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 <p>Applied targeted cleaning: lowercase, punctuation removal (preserve accents via À-ÿ), space normalization, and generic filtering. This creates cleaned columns for robust similarity computation.</p>
 <section id="funcion-to-clean-text" class="level4">
 <h4 data-anchor-id="funcion-to-clean-text">Funcion to clean text:</h4>
-<div id="413c8b8f" class="cell" data-execution_count="11">
+<div id="2f0d78f9" class="cell" data-execution_count="11">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clean_text(text):</span>
@@ -668,12 +668,12 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 </div>
 <section id="beforeafter-cleaning-sample" class="level6">
 <h6 data-anchor-id="beforeafter-cleaning-sample">Before/After Cleaning Sample:</h6>
-<div id="76f7415b" class="cell" data-execution_count="12">
+<div id="3d1131d4" class="cell" data-execution_count="12">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>hotels_A[[<span class="st">'hotel_name'</span>, <span class="st">'cleaned_hotel_name'</span>, <span class="st">'address'</span>, <span class="st">'cleaned_address'</span>]].head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="33">
+<div class="cell-output cell-output-display" data-execution_count="138">
 <div>
 
 
@@ -738,7 +738,7 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 <p>Full Cartesian product (436 × 425 = 185,300 pairs) is infeasible (O(n²) complexity). Blocking prunes to feasible candidates: first by location (city-country key), then geographically (Haversine ≤1km). This hierarchical approach ensures high recall while minimizing computations.</p>
 <section id="implementing-the-blocking-strategy-filter-by-city-and-country" class="level6">
 <h6 data-anchor-id="implementing-the-blocking-strategy-filter-by-city-and-country">Implementing the Blocking Strategy (Filter) by city and country</h6>
-<div id="857998b0" class="cell" data-execution_count="13">
+<div id="94dbc577" class="cell" data-execution_count="13">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Criar uma chave de bloqueio combinando cidade e país para ambas as bases</span></span>
@@ -797,7 +797,7 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 <p>Where R=6371km, φ=latitude, λ=longitude (radians). Threshold=1km accounts for GPS inaccuracies.</p>
 <section id="implementing-the-second-filter-based-on-distance-between-hotels" class="level6">
 <h6 data-anchor-id="implementing-the-second-filter-based-on-distance-between-hotels">Implementing the second filter based on distance between hotels</h6>
-<div id="8c6762ff" class="cell" data-execution_count="14">
+<div id="d7e79e3e" class="cell" data-execution_count="14">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Função do Cálculo da Distância de Haversine</span></span>
@@ -847,8 +847,8 @@ Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizon
 <p>Core: Rule-based classifier with tunable thresholds on similarities (Levenshtein: 0-1 ratio) and geo-distance. Strict rule requires multi-evidence; flexible prioritizes geo for noisy addresses. Grid search optimizes F1 on train_split (80%); validation on val_split (20%) assesses generalization.</p>
 <section id="holdout-split" class="level6">
 <h6 data-anchor-id="holdout-split">80/20 Holdout Split</h6>
-<p>To mitigate overfitting (e.g., thresholds “memorizing” train patterns), split labeled data: 80% for tuning, 20% unseen for F1 validation. Stratified by <code>is_match</code> preserves balance (~75% positives).</p>
-<div id="25619259" class="cell" data-execution_count="15">
+<p>To mitigate overfitting (e.g., thresholds “memorizing” train patterns), split labeled data: 80% for tuning, 20% unseen for F1 validation. Stratified by is_match preserves balance (~75% positives).</p>
+<div id="bc7934e7" class="cell" data-execution_count="15">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Split 80/20</span></span>
@@ -874,7 +874,7 @@ Val (20%): 67 pairs (matches: 50)</code></pre>
 </section>
 <section id="optimization-functions" class="level6">
 <h6 data-anchor-id="optimization-functions">Optimization Functions:</h6>
-<div id="1d20188c" class="cell" data-execution_count="16">
+<div id="a5f7173b" class="cell" data-execution_count="16">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Função para calcular TP, FP, FN, Precision, Recall e F1-Score a partir das previsões</span></span>
@@ -928,8 +928,8 @@ Val (20%): 67 pairs (matches: 50)</code></pre>
 </section>
 <section id="grid-search-and-threshold-optimization" class="level2">
 <h2 data-anchor-id="grid-search-and-threshold-optimization">Grid Search and Threshold Optimization:</h2>
-<p>Tested 30 combinations (name: [0.75,0.80]; addr: [0.50,0.70,0.90]; geo: [0.5-0.9km]) on train_split. Flexible thresholds: name=0.95, geo=0.5km.</p>
-<div id="1d1ca0ff" class="cell" data-execution_count="17">
+<p>Tested 30 combinations:</p>
+<div id="306b0a4f" class="cell" data-execution_count="17">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Otimização de Thresholds e Visualização</span></span>
@@ -1015,7 +1015,7 @@ Best parameters: {'name_sim_thresh': 0.75, 'addr_sim_thresh': 0.5, 'final_geo_di
 <p>Decision: Levenshtein selected for its interpretability and low overhead on short strings (names/addresses). Grid search (30 combinations) efficiently tunes hyperparameters, prioritizing F1 for balanced precision/recall. Optimal: name=0.75 (tolerates minor typos), address=0.50 (addresses vary more), geo=0.9km (refined from 1km). Strict rule ensures comprehensive evidence; flexible boosts recall for geo-dominant cases. Achieves F1=1.0 (TP=full matches, FP/FN=0), validating on train set.</p>
 <section id="precision-recall-scatter-plot" class="level6">
 <h6 data-anchor-id="precision-recall-scatter-plot">Precision-Recall Scatter Plot:</h6>
-<div id="42aefe4f" class="cell" data-execution_count="18">
+<div id="8ae90395" class="cell" data-execution_count="18">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot de dispersão de Precision vs Recall, colorindo por F1-Score</span></span>
@@ -1043,7 +1043,7 @@ Best parameters: {'name_sim_thresh': 0.75, 'addr_sim_thresh': 0.5, 'final_geo_di
 <section id="final-application-and-holdout-validation" class="level2">
 <h2 data-anchor-id="final-application-and-holdout-validation">Final Application and Holdout Validation</h2>
 <p>Applied best_params to full candidates; evaluated on val_split for unseen generalization.</p>
-<div id="593ee9d0" class="cell" data-execution_count="19">
+<div id="b326bccf" class="cell" data-execution_count="19">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aplicando Melhores Parâmetros</span></span>
@@ -1091,12 +1091,11 @@ Details on Val_Split:
 </section>
 <section id="api-enrichment" class="level1">
 <h1>API Enrichment</h1>
-<p>Post-matching, the pipeline enriches confirmed duplicates (predicted_match=1) with external data via a simulated RESTful API. This step adds business value: e.g., filtering by amenities (“spa” hotels) or scoring for recommendations. The mock API (<code>mock_api.py</code>) uses FastAPI to expose <code>/enrich</code> (POST), accepting JSON payload <code>{hotel_name, city, country}</code> and returning deterministic attributes based on a hashed key (ensuring reproducibility for testing). Amenities sampled from a pool (e.g., “wifi”, “pool”, “gym”); stars (3-5); score (7.0-9.7).</p>
-<p>Key optimizations: - <strong>Deduplication</strong>: Enrich only unique profiles (drop_duplicates on hotel_name/city/country), reducing ~150 matches to ~50 calls. - <strong>Health Check</strong>: Verify <code>/healthz</code> before batch; timeout=5s per request. - <strong>Error Handling</strong>: Fallback to <code>None</code> if API offline (graceful degradation; non-enriched fields marked NA). - <strong>Determinism</strong>: Hash-based random seed (e.g., <code>random.Random(hash(key) % (2**32-1))</code>) simulates real APIs (e.g., Google Places) without external deps.</p>
-<p>In production, replace with real endpoints (e.g., TripAdvisor API); here, it validates integration (e.g., ~80% success rate in tests).</p>
+<p>This step adds business value: e.g., filtering by amenities (“spa” hotels) or scoring for recommendations. The mock API uses FastAPI to expose /enrich (POST), accepting JSON payload {hotel_name, city, country} and returning deterministic attributes based on a hashed key (ensuring reproducibility for testing). Amenities sampled from a pool (e.g., “wifi”, “pool”, “gym”); stars (3-5); score (7.0-9.7).</p>
+<p>Key optimizations: - Deduplication: Enrich only unique profiles (drop_duplicates on hotel_name/city/country), reducing ~150 matches to ~50 calls. - Health Check: Verify /healthz before batch; timeout=5s per request. - Error Handling: Fallback to None if API offline (graceful degradation; non-enriched fields marked NA). - Determinism: Hash-based random seed simulates real APIs (e.g., Google Places) without external deps.</p>
 <section id="api-implementation-overview" class="level3">
 <h3 data-anchor-id="api-implementation-overview">API Implementation Overview</h3>
-<p>The mock server runs locally (<code>uvicorn mock_api:app --host 0.0.0.0 --port 8000</code>).</p>
+<p>The mock server runs locally.</p>
 </section>
 <section id="video-demonstration-api-enrichment-simulation" class="level3">
 <h3 data-anchor-id="video-demonstration-api-enrichment-simulation">Video Demonstration: API Enrichment Simulation</h3>
@@ -1106,13 +1105,13 @@ Details on Val_Split:
 <section id="enriched-output-visualization" class="level2">
 <h2 data-anchor-id="enriched-output-visualization">Enriched Output Visualization</h2>
 <p>The final deliverable unifies matches with API data.</p>
-<div id="66921b5c" class="cell" data-execution_count="21">
+<div id="5be5810e" class="cell" data-execution_count="21">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load and style enriched output for visualization</span></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>enriched_df <span class="op">=</span> pd.read_csv(<span class="st">'output_final_enriquecido.csv'</span>)</span>
 <span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>styled_table <span class="op">=</span> enriched_df.head(<span class="dv">10</span>).style <span class="op">\</span></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    .set_caption(<span class="st">"Enriched Matches Sample)"</span>) <span class="op">\</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    .set_caption(<span class="st">"Enriched Matches Sample"</span>) <span class="op">\</span></span>
 <span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    .background_gradient(subset<span class="op">=</span>[<span class="st">'enriched_category_stars'</span>, <span class="st">'enriched_review_score'</span>], cmap<span class="op">=</span><span class="st">'YlGn'</span>) <span class="op">\</span></span>
 <span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">apply</span>(<span class="kw">lambda</span> row: [<span class="st">'background-color: #a5b8eeff'</span> <span class="cf">if</span> row[<span class="st">'predicted_match'</span>] <span class="op">==</span> <span class="dv">1</span> <span class="cf">else</span> <span class="st">''</span> <span class="cf">for</span> _ <span class="kw">in</span> row], axis<span class="op">=</span><span class="dv">1</span>) <span class="op">\</span></span>
 <span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    .set_properties(<span class="op">**</span>{<span class="st">'text-align'</span>: <span class="st">'left'</span>, <span class="st">'font-size'</span>: <span class="st">'12px'</span>}) <span class="op">\</span></span>
@@ -1121,81 +1120,81 @@ Details on Val_Split:
 <span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>styled_table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="42">
+<div class="cell-output cell-output-display" data-execution_count="147">
 <style type="text/css">
-#T_b8fe9 th {
+#T_252df th {
   font-weight: bold;
   background-color: #fdfdfdff;
 }
-#T_b8fe9_row0_col0, #T_b8fe9_row0_col1, #T_b8fe9_row0_col2, #T_b8fe9_row0_col3, #T_b8fe9_row0_col4, #T_b8fe9_row0_col5, #T_b8fe9_row0_col6, #T_b8fe9_row0_col7, #T_b8fe9_row0_col8, #T_b8fe9_row0_col9, #T_b8fe9_row0_col10, #T_b8fe9_row0_col13, #T_b8fe9_row1_col0, #T_b8fe9_row1_col1, #T_b8fe9_row1_col2, #T_b8fe9_row1_col3, #T_b8fe9_row1_col4, #T_b8fe9_row1_col5, #T_b8fe9_row1_col6, #T_b8fe9_row1_col7, #T_b8fe9_row1_col8, #T_b8fe9_row1_col9, #T_b8fe9_row1_col10, #T_b8fe9_row1_col13, #T_b8fe9_row2_col0, #T_b8fe9_row2_col1, #T_b8fe9_row2_col2, #T_b8fe9_row2_col3, #T_b8fe9_row2_col4, #T_b8fe9_row2_col5, #T_b8fe9_row2_col6, #T_b8fe9_row2_col7, #T_b8fe9_row2_col8, #T_b8fe9_row2_col9, #T_b8fe9_row2_col10, #T_b8fe9_row2_col13, #T_b8fe9_row3_col0, #T_b8fe9_row3_col1, #T_b8fe9_row3_col2, #T_b8fe9_row3_col3, #T_b8fe9_row3_col4, #T_b8fe9_row3_col5, #T_b8fe9_row3_col6, #T_b8fe9_row3_col7, #T_b8fe9_row3_col8, #T_b8fe9_row3_col9, #T_b8fe9_row3_col10, #T_b8fe9_row3_col13, #T_b8fe9_row4_col0, #T_b8fe9_row4_col1, #T_b8fe9_row4_col2, #T_b8fe9_row4_col3, #T_b8fe9_row4_col4, #T_b8fe9_row4_col5, #T_b8fe9_row4_col6, #T_b8fe9_row4_col7, #T_b8fe9_row4_col8, #T_b8fe9_row4_col9, #T_b8fe9_row4_col10, #T_b8fe9_row4_col13, #T_b8fe9_row5_col0, #T_b8fe9_row5_col1, #T_b8fe9_row5_col2, #T_b8fe9_row5_col3, #T_b8fe9_row5_col4, #T_b8fe9_row5_col5, #T_b8fe9_row5_col6, #T_b8fe9_row5_col7, #T_b8fe9_row5_col8, #T_b8fe9_row5_col9, #T_b8fe9_row5_col10, #T_b8fe9_row5_col13, #T_b8fe9_row6_col0, #T_b8fe9_row6_col1, #T_b8fe9_row6_col2, #T_b8fe9_row6_col3, #T_b8fe9_row6_col4, #T_b8fe9_row6_col5, #T_b8fe9_row6_col6, #T_b8fe9_row6_col7, #T_b8fe9_row6_col8, #T_b8fe9_row6_col9, #T_b8fe9_row6_col10, #T_b8fe9_row6_col13, #T_b8fe9_row7_col0, #T_b8fe9_row7_col1, #T_b8fe9_row7_col2, #T_b8fe9_row7_col3, #T_b8fe9_row7_col4, #T_b8fe9_row7_col5, #T_b8fe9_row7_col6, #T_b8fe9_row7_col7, #T_b8fe9_row7_col8, #T_b8fe9_row7_col9, #T_b8fe9_row7_col10, #T_b8fe9_row7_col13, #T_b8fe9_row8_col0, #T_b8fe9_row8_col1, #T_b8fe9_row8_col2, #T_b8fe9_row8_col3, #T_b8fe9_row8_col4, #T_b8fe9_row8_col5, #T_b8fe9_row8_col6, #T_b8fe9_row8_col7, #T_b8fe9_row8_col8, #T_b8fe9_row8_col9, #T_b8fe9_row8_col10, #T_b8fe9_row8_col13, #T_b8fe9_row9_col0, #T_b8fe9_row9_col1, #T_b8fe9_row9_col2, #T_b8fe9_row9_col3, #T_b8fe9_row9_col4, #T_b8fe9_row9_col5, #T_b8fe9_row9_col6, #T_b8fe9_row9_col7, #T_b8fe9_row9_col8, #T_b8fe9_row9_col9, #T_b8fe9_row9_col10, #T_b8fe9_row9_col13 {
+#T_252df_row0_col0, #T_252df_row0_col1, #T_252df_row0_col2, #T_252df_row0_col3, #T_252df_row0_col4, #T_252df_row0_col5, #T_252df_row0_col6, #T_252df_row0_col7, #T_252df_row0_col8, #T_252df_row0_col9, #T_252df_row0_col10, #T_252df_row0_col13, #T_252df_row1_col0, #T_252df_row1_col1, #T_252df_row1_col2, #T_252df_row1_col3, #T_252df_row1_col4, #T_252df_row1_col5, #T_252df_row1_col6, #T_252df_row1_col7, #T_252df_row1_col8, #T_252df_row1_col9, #T_252df_row1_col10, #T_252df_row1_col13, #T_252df_row2_col0, #T_252df_row2_col1, #T_252df_row2_col2, #T_252df_row2_col3, #T_252df_row2_col4, #T_252df_row2_col5, #T_252df_row2_col6, #T_252df_row2_col7, #T_252df_row2_col8, #T_252df_row2_col9, #T_252df_row2_col10, #T_252df_row2_col13, #T_252df_row3_col0, #T_252df_row3_col1, #T_252df_row3_col2, #T_252df_row3_col3, #T_252df_row3_col4, #T_252df_row3_col5, #T_252df_row3_col6, #T_252df_row3_col7, #T_252df_row3_col8, #T_252df_row3_col9, #T_252df_row3_col10, #T_252df_row3_col13, #T_252df_row4_col0, #T_252df_row4_col1, #T_252df_row4_col2, #T_252df_row4_col3, #T_252df_row4_col4, #T_252df_row4_col5, #T_252df_row4_col6, #T_252df_row4_col7, #T_252df_row4_col8, #T_252df_row4_col9, #T_252df_row4_col10, #T_252df_row4_col13, #T_252df_row5_col0, #T_252df_row5_col1, #T_252df_row5_col2, #T_252df_row5_col3, #T_252df_row5_col4, #T_252df_row5_col5, #T_252df_row5_col6, #T_252df_row5_col7, #T_252df_row5_col8, #T_252df_row5_col9, #T_252df_row5_col10, #T_252df_row5_col13, #T_252df_row6_col0, #T_252df_row6_col1, #T_252df_row6_col2, #T_252df_row6_col3, #T_252df_row6_col4, #T_252df_row6_col5, #T_252df_row6_col6, #T_252df_row6_col7, #T_252df_row6_col8, #T_252df_row6_col9, #T_252df_row6_col10, #T_252df_row6_col13, #T_252df_row7_col0, #T_252df_row7_col1, #T_252df_row7_col2, #T_252df_row7_col3, #T_252df_row7_col4, #T_252df_row7_col5, #T_252df_row7_col6, #T_252df_row7_col7, #T_252df_row7_col8, #T_252df_row7_col9, #T_252df_row7_col10, #T_252df_row7_col13, #T_252df_row8_col0, #T_252df_row8_col1, #T_252df_row8_col2, #T_252df_row8_col3, #T_252df_row8_col4, #T_252df_row8_col5, #T_252df_row8_col6, #T_252df_row8_col7, #T_252df_row8_col8, #T_252df_row8_col9, #T_252df_row8_col10, #T_252df_row8_col13, #T_252df_row9_col0, #T_252df_row9_col1, #T_252df_row9_col2, #T_252df_row9_col3, #T_252df_row9_col4, #T_252df_row9_col5, #T_252df_row9_col6, #T_252df_row9_col7, #T_252df_row9_col8, #T_252df_row9_col9, #T_252df_row9_col10, #T_252df_row9_col13 {
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row0_col11, #T_b8fe9_row0_col12, #T_b8fe9_row1_col11 {
+#T_252df_row0_col11, #T_252df_row0_col12, #T_252df_row1_col11 {
   background-color: #004529;
   color: #f1f1f1;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row1_col12 {
+#T_252df_row1_col12 {
   background-color: #2d914b;
   color: #f1f1f1;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row2_col11, #T_b8fe9_row5_col11, #T_b8fe9_row7_col11, #T_b8fe9_row9_col11 {
+#T_252df_row2_col11, #T_252df_row5_col11, #T_252df_row7_col11, #T_252df_row9_col11 {
   background-color: #77c679;
   color: #000000;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row2_col12 {
+#T_252df_row2_col12 {
   background-color: #bce395;
   color: #000000;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row3_col11, #T_b8fe9_row4_col11, #T_b8fe9_row4_col12, #T_b8fe9_row6_col11, #T_b8fe9_row8_col11 {
+#T_252df_row3_col11, #T_252df_row4_col11, #T_252df_row4_col12, #T_252df_row6_col11, #T_252df_row8_col11 {
   background-color: #ffffe5;
   color: #000000;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row3_col12, #T_b8fe9_row8_col12 {
+#T_252df_row3_col12, #T_252df_row8_col12 {
   background-color: #fafdc8;
   color: #000000;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row5_col12 {
+#T_252df_row5_col12 {
   background-color: #9cd687;
   color: #000000;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row6_col12 {
+#T_252df_row6_col12 {
   background-color: #f7fcba;
   color: #000000;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row7_col12 {
+#T_252df_row7_col12 {
   background-color: #006837;
   color: #f1f1f1;
   background-color: #a5b8eeff;
   text-align: left;
   font-size: 12px;
 }
-#T_b8fe9_row9_col12 {
+#T_252df_row9_col12 {
   background-color: #0b713b;
   color: #f1f1f1;
   background-color: #a5b8eeff;
@@ -1204,191 +1203,191 @@ Details on Val_Split:
 }
 </style>
 
-<div id="T_b8fe9" class="quarto-float quarto-figure quarto-figure-center" data-quarto-postprocess="true">
+<div id="T_252df" class="quarto-float quarto-figure quarto-figure-center" data-quarto-postprocess="true">
 <figure class="quarto-float quarto-float-tbl figure">
-<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="T_b8fe9-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Table&nbsp;1: Enriched Matches Sample)
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="T_252df-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Enriched Matches Sample
 </figcaption>
-<div aria-describedby="T_b8fe9-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<table id="T_b8fe9" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<div aria-describedby="T_252df-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table id="T_252df" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
-<th id="T_b8fe9_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">id_A</th>
-<th id="T_b8fe9_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">id_B</th>
-<th id="T_b8fe9_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">predicted_match</th>
-<th id="T_b8fe9_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">hotel_name</th>
-<th id="T_b8fe9_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">address</th>
-<th id="T_b8fe9_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">city</th>
-<th id="T_b8fe9_level0_col6" class="col_heading level0 col6" data-quarto-table-cell-role="th">country</th>
-<th id="T_b8fe9_level0_col7" class="col_heading level0 col7" data-quarto-table-cell-role="th">latitude</th>
-<th id="T_b8fe9_level0_col8" class="col_heading level0 col8" data-quarto-table-cell-role="th">longitude</th>
-<th id="T_b8fe9_level0_col9" class="col_heading level0 col9" data-quarto-table-cell-role="th">rating</th>
-<th id="T_b8fe9_level0_col10" class="col_heading level0 col10" data-quarto-table-cell-role="th">reviews_count</th>
-<th id="T_b8fe9_level0_col11" class="col_heading level0 col11" data-quarto-table-cell-role="th">enriched_category_stars</th>
-<th id="T_b8fe9_level0_col12" class="col_heading level0 col12" data-quarto-table-cell-role="th">enriched_review_score</th>
-<th id="T_b8fe9_level0_col13" class="col_heading level0 col13" data-quarto-table-cell-role="th">enriched_amenities</th>
+<th id="T_252df_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">id_A</th>
+<th id="T_252df_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">id_B</th>
+<th id="T_252df_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">predicted_match</th>
+<th id="T_252df_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">hotel_name</th>
+<th id="T_252df_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">address</th>
+<th id="T_252df_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">city</th>
+<th id="T_252df_level0_col6" class="col_heading level0 col6" data-quarto-table-cell-role="th">country</th>
+<th id="T_252df_level0_col7" class="col_heading level0 col7" data-quarto-table-cell-role="th">latitude</th>
+<th id="T_252df_level0_col8" class="col_heading level0 col8" data-quarto-table-cell-role="th">longitude</th>
+<th id="T_252df_level0_col9" class="col_heading level0 col9" data-quarto-table-cell-role="th">rating</th>
+<th id="T_252df_level0_col10" class="col_heading level0 col10" data-quarto-table-cell-role="th">reviews_count</th>
+<th id="T_252df_level0_col11" class="col_heading level0 col11" data-quarto-table-cell-role="th">enriched_category_stars</th>
+<th id="T_252df_level0_col12" class="col_heading level0 col12" data-quarto-table-cell-role="th">enriched_review_score</th>
+<th id="T_252df_level0_col13" class="col_heading level0 col13" data-quarto-table-cell-role="th">enriched_amenities</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td id="T_b8fe9_row0_col0" class="data row0 col0">A00013</td>
-<td id="T_b8fe9_row0_col1" class="data row0 col1">B00009</td>
-<td id="T_b8fe9_row0_col2" class="data row0 col2">1</td>
-<td id="T_b8fe9_row0_col3" class="data row0 col3">Hotel Paulista Saint</td>
-<td id="T_b8fe9_row0_col4" class="data row0 col4">Avenida Central 6230</td>
-<td id="T_b8fe9_row0_col5" class="data row0 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row0_col6" class="data row0 col6">BR</td>
-<td id="T_b8fe9_row0_col7" class="data row0 col7">-19.908010</td>
-<td id="T_b8fe9_row0_col8" class="data row0 col8">-43.893659</td>
-<td id="T_b8fe9_row0_col9" class="data row0 col9">4.800000</td>
-<td id="T_b8fe9_row0_col10" class="data row0 col10">706.000000</td>
-<td id="T_b8fe9_row0_col11" class="data row0 col11">5.000000</td>
-<td id="T_b8fe9_row0_col12" class="data row0 col12">9.400000</td>
-<td id="T_b8fe9_row0_col13" class="data row0 col13">pet_friendly, spa, gym</td>
+<td id="T_252df_row0_col0" class="data row0 col0">A00013</td>
+<td id="T_252df_row0_col1" class="data row0 col1">B00009</td>
+<td id="T_252df_row0_col2" class="data row0 col2">1</td>
+<td id="T_252df_row0_col3" class="data row0 col3">Hotel Paulista Saint</td>
+<td id="T_252df_row0_col4" class="data row0 col4">Avenida Central 6230</td>
+<td id="T_252df_row0_col5" class="data row0 col5">Belo Horizonte</td>
+<td id="T_252df_row0_col6" class="data row0 col6">BR</td>
+<td id="T_252df_row0_col7" class="data row0 col7">-19.908010</td>
+<td id="T_252df_row0_col8" class="data row0 col8">-43.893659</td>
+<td id="T_252df_row0_col9" class="data row0 col9">4.800000</td>
+<td id="T_252df_row0_col10" class="data row0 col10">706.000000</td>
+<td id="T_252df_row0_col11" class="data row0 col11">5.000000</td>
+<td id="T_252df_row0_col12" class="data row0 col12">9.400000</td>
+<td id="T_252df_row0_col13" class="data row0 col13">pet_friendly, spa, gym</td>
 </tr>
 <tr class="even">
-<td id="T_b8fe9_row1_col0" class="data row1 col0">A00096</td>
-<td id="T_b8fe9_row1_col1" class="data row1 col1">B00085</td>
-<td id="T_b8fe9_row1_col2" class="data row1 col2">1</td>
-<td id="T_b8fe9_row1_col3" class="data row1 col3">Inn Seine Saint</td>
-<td id="T_b8fe9_row1_col4" class="data row1 col4">Avenue Europa, 9562</td>
-<td id="T_b8fe9_row1_col5" class="data row1 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row1_col6" class="data row1 col6">BR</td>
-<td id="T_b8fe9_row1_col7" class="data row1 col7">-19.955674</td>
-<td id="T_b8fe9_row1_col8" class="data row1 col8">-43.857453</td>
-<td id="T_b8fe9_row1_col9" class="data row1 col9">3.800000</td>
-<td id="T_b8fe9_row1_col10" class="data row1 col10">387.000000</td>
-<td id="T_b8fe9_row1_col11" class="data row1 col11">5.000000</td>
-<td id="T_b8fe9_row1_col12" class="data row1 col12">8.700000</td>
-<td id="T_b8fe9_row1_col13" class="data row1 col13">air_conditioning, restaurant, wifi, pool</td>
+<td id="T_252df_row1_col0" class="data row1 col0">A00096</td>
+<td id="T_252df_row1_col1" class="data row1 col1">B00085</td>
+<td id="T_252df_row1_col2" class="data row1 col2">1</td>
+<td id="T_252df_row1_col3" class="data row1 col3">Inn Seine Saint</td>
+<td id="T_252df_row1_col4" class="data row1 col4">Avenue Europa, 9562</td>
+<td id="T_252df_row1_col5" class="data row1 col5">Belo Horizonte</td>
+<td id="T_252df_row1_col6" class="data row1 col6">BR</td>
+<td id="T_252df_row1_col7" class="data row1 col7">-19.955674</td>
+<td id="T_252df_row1_col8" class="data row1 col8">-43.857453</td>
+<td id="T_252df_row1_col9" class="data row1 col9">3.800000</td>
+<td id="T_252df_row1_col10" class="data row1 col10">387.000000</td>
+<td id="T_252df_row1_col11" class="data row1 col11">5.000000</td>
+<td id="T_252df_row1_col12" class="data row1 col12">8.700000</td>
+<td id="T_252df_row1_col13" class="data row1 col13">air_conditioning, restaurant, wifi, pool</td>
 </tr>
 <tr class="odd">
-<td id="T_b8fe9_row2_col0" class="data row2 col0">A00127</td>
-<td id="T_b8fe9_row2_col1" class="data row2 col1">B00116</td>
-<td id="T_b8fe9_row2_col2" class="data row2 col2">1</td>
-<td id="T_b8fe9_row2_col3" class="data row2 col3">Residency Europa</td>
-<td id="T_b8fe9_row2_col4" class="data row2 col4">Rua das Flores, 2833</td>
-<td id="T_b8fe9_row2_col5" class="data row2 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row2_col6" class="data row2 col6">BR</td>
-<td id="T_b8fe9_row2_col7" class="data row2 col7">-19.851704</td>
-<td id="T_b8fe9_row2_col8" class="data row2 col8">-43.914901</td>
-<td id="T_b8fe9_row2_col9" class="data row2 col9">3.800000</td>
-<td id="T_b8fe9_row2_col10" class="data row2 col10">936.000000</td>
-<td id="T_b8fe9_row2_col11" class="data row2 col11">4.000000</td>
-<td id="T_b8fe9_row2_col12" class="data row2 col12">7.800000</td>
-<td id="T_b8fe9_row2_col13" class="data row2 col13">gym, restaurant, bar, parking, pool, wifi</td>
+<td id="T_252df_row2_col0" class="data row2 col0">A00127</td>
+<td id="T_252df_row2_col1" class="data row2 col1">B00116</td>
+<td id="T_252df_row2_col2" class="data row2 col2">1</td>
+<td id="T_252df_row2_col3" class="data row2 col3">Residency Europa</td>
+<td id="T_252df_row2_col4" class="data row2 col4">Rua das Flores, 2833</td>
+<td id="T_252df_row2_col5" class="data row2 col5">Belo Horizonte</td>
+<td id="T_252df_row2_col6" class="data row2 col6">BR</td>
+<td id="T_252df_row2_col7" class="data row2 col7">-19.851704</td>
+<td id="T_252df_row2_col8" class="data row2 col8">-43.914901</td>
+<td id="T_252df_row2_col9" class="data row2 col9">3.800000</td>
+<td id="T_252df_row2_col10" class="data row2 col10">936.000000</td>
+<td id="T_252df_row2_col11" class="data row2 col11">4.000000</td>
+<td id="T_252df_row2_col12" class="data row2 col12">7.800000</td>
+<td id="T_252df_row2_col13" class="data row2 col13">gym, restaurant, bar, parking, pool, wifi</td>
 </tr>
 <tr class="even">
-<td id="T_b8fe9_row3_col0" class="data row3 col0">A00130</td>
-<td id="T_b8fe9_row3_col1" class="data row3 col1">B00119</td>
-<td id="T_b8fe9_row3_col2" class="data row3 col2">1</td>
-<td id="T_b8fe9_row3_col3" class="data row3 col3">Inn Gaudí</td>
-<td id="T_b8fe9_row3_col4" class="data row3 col4">Rua Copacabana, 1066</td>
-<td id="T_b8fe9_row3_col5" class="data row3 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row3_col6" class="data row3 col6">BR</td>
-<td id="T_b8fe9_row3_col7" class="data row3 col7">-19.934105</td>
-<td id="T_b8fe9_row3_col8" class="data row3 col8">-43.871378</td>
-<td id="T_b8fe9_row3_col9" class="data row3 col9">3.800000</td>
-<td id="T_b8fe9_row3_col10" class="data row3 col10">53.000000</td>
-<td id="T_b8fe9_row3_col11" class="data row3 col11">3.000000</td>
-<td id="T_b8fe9_row3_col12" class="data row3 col12">7.200000</td>
-<td id="T_b8fe9_row3_col13" class="data row3 col13">pool, bar, wifi, gym, restaurant</td>
+<td id="T_252df_row3_col0" class="data row3 col0">A00130</td>
+<td id="T_252df_row3_col1" class="data row3 col1">B00119</td>
+<td id="T_252df_row3_col2" class="data row3 col2">1</td>
+<td id="T_252df_row3_col3" class="data row3 col3">Inn Gaudí</td>
+<td id="T_252df_row3_col4" class="data row3 col4">Rua Copacabana, 1066</td>
+<td id="T_252df_row3_col5" class="data row3 col5">Belo Horizonte</td>
+<td id="T_252df_row3_col6" class="data row3 col6">BR</td>
+<td id="T_252df_row3_col7" class="data row3 col7">-19.934105</td>
+<td id="T_252df_row3_col8" class="data row3 col8">-43.871378</td>
+<td id="T_252df_row3_col9" class="data row3 col9">3.800000</td>
+<td id="T_252df_row3_col10" class="data row3 col10">53.000000</td>
+<td id="T_252df_row3_col11" class="data row3 col11">3.000000</td>
+<td id="T_252df_row3_col12" class="data row3 col12">7.200000</td>
+<td id="T_252df_row3_col13" class="data row3 col13">pool, bar, wifi, gym, restaurant</td>
 </tr>
 <tr class="odd">
-<td id="T_b8fe9_row4_col0" class="data row4 col0">A00148</td>
-<td id="T_b8fe9_row4_col1" class="data row4 col1">B00137</td>
-<td id="T_b8fe9_row4_col2" class="data row4 col2">1</td>
-<td id="T_b8fe9_row4_col3" class="data row4 col3">Grand Hotel Cathedral &amp; Spa</td>
-<td id="T_b8fe9_row4_col4" class="data row4 col4">Avenue Central, 8042</td>
-<td id="T_b8fe9_row4_col5" class="data row4 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row4_col6" class="data row4 col6">BR</td>
-<td id="T_b8fe9_row4_col7" class="data row4 col7">-19.873712</td>
-<td id="T_b8fe9_row4_col8" class="data row4 col8">-43.985932</td>
-<td id="T_b8fe9_row4_col9" class="data row4 col9">4.300000</td>
-<td id="T_b8fe9_row4_col10" class="data row4 col10">93.000000</td>
-<td id="T_b8fe9_row4_col11" class="data row4 col11">3.000000</td>
-<td id="T_b8fe9_row4_col12" class="data row4 col12">7.000000</td>
-<td id="T_b8fe9_row4_col13" class="data row4 col13">pool, spa, parking</td>
+<td id="T_252df_row4_col0" class="data row4 col0">A00148</td>
+<td id="T_252df_row4_col1" class="data row4 col1">B00137</td>
+<td id="T_252df_row4_col2" class="data row4 col2">1</td>
+<td id="T_252df_row4_col3" class="data row4 col3">Grand Hotel Cathedral &amp; Spa</td>
+<td id="T_252df_row4_col4" class="data row4 col4">Avenue Central, 8042</td>
+<td id="T_252df_row4_col5" class="data row4 col5">Belo Horizonte</td>
+<td id="T_252df_row4_col6" class="data row4 col6">BR</td>
+<td id="T_252df_row4_col7" class="data row4 col7">-19.873712</td>
+<td id="T_252df_row4_col8" class="data row4 col8">-43.985932</td>
+<td id="T_252df_row4_col9" class="data row4 col9">4.300000</td>
+<td id="T_252df_row4_col10" class="data row4 col10">93.000000</td>
+<td id="T_252df_row4_col11" class="data row4 col11">3.000000</td>
+<td id="T_252df_row4_col12" class="data row4 col12">7.000000</td>
+<td id="T_252df_row4_col13" class="data row4 col13">pool, spa, parking</td>
 </tr>
 <tr class="even">
-<td id="T_b8fe9_row5_col0" class="data row5 col0">A00156</td>
-<td id="T_b8fe9_row5_col1" class="data row5 col1">B00145</td>
-<td id="T_b8fe9_row5_col2" class="data row5 col2">1</td>
-<td id="T_b8fe9_row5_col3" class="data row5 col3">Pousada Seine Saint</td>
-<td id="T_b8fe9_row5_col4" class="data row5 col4">Praça Copacabana, 5393</td>
-<td id="T_b8fe9_row5_col5" class="data row5 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row5_col6" class="data row5 col6">BR</td>
-<td id="T_b8fe9_row5_col7" class="data row5 col7">-19.917539</td>
-<td id="T_b8fe9_row5_col8" class="data row5 col8">-43.890322</td>
-<td id="T_b8fe9_row5_col9" class="data row5 col9">3.200000</td>
-<td id="T_b8fe9_row5_col10" class="data row5 col10">148.000000</td>
-<td id="T_b8fe9_row5_col11" class="data row5 col11">4.000000</td>
-<td id="T_b8fe9_row5_col12" class="data row5 col12">8.000000</td>
-<td id="T_b8fe9_row5_col13" class="data row5 col13">pool, air_conditioning, parking, pet_friendly</td>
+<td id="T_252df_row5_col0" class="data row5 col0">A00156</td>
+<td id="T_252df_row5_col1" class="data row5 col1">B00145</td>
+<td id="T_252df_row5_col2" class="data row5 col2">1</td>
+<td id="T_252df_row5_col3" class="data row5 col3">Pousada Seine Saint</td>
+<td id="T_252df_row5_col4" class="data row5 col4">Praça Copacabana, 5393</td>
+<td id="T_252df_row5_col5" class="data row5 col5">Belo Horizonte</td>
+<td id="T_252df_row5_col6" class="data row5 col6">BR</td>
+<td id="T_252df_row5_col7" class="data row5 col7">-19.917539</td>
+<td id="T_252df_row5_col8" class="data row5 col8">-43.890322</td>
+<td id="T_252df_row5_col9" class="data row5 col9">3.200000</td>
+<td id="T_252df_row5_col10" class="data row5 col10">148.000000</td>
+<td id="T_252df_row5_col11" class="data row5 col11">4.000000</td>
+<td id="T_252df_row5_col12" class="data row5 col12">8.000000</td>
+<td id="T_252df_row5_col13" class="data row5 col13">pool, air_conditioning, parking, pet_friendly</td>
 </tr>
 <tr class="odd">
-<td id="T_b8fe9_row6_col0" class="data row6 col0">A00162</td>
-<td id="T_b8fe9_row6_col1" class="data row6 col1">B00151</td>
-<td id="T_b8fe9_row6_col2" class="data row6 col2">1</td>
-<td id="T_b8fe9_row6_col3" class="data row6 col3">Palace Central</td>
-<td id="T_b8fe9_row6_col4" class="data row6 col4">Avenida Copacabana, 3565</td>
-<td id="T_b8fe9_row6_col5" class="data row6 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row6_col6" class="data row6 col6">BR</td>
-<td id="T_b8fe9_row6_col7" class="data row6 col7">-19.939555</td>
-<td id="T_b8fe9_row6_col8" class="data row6 col8">-43.944223</td>
-<td id="T_b8fe9_row6_col9" class="data row6 col9">4.500000</td>
-<td id="T_b8fe9_row6_col10" class="data row6 col10">842.000000</td>
-<td id="T_b8fe9_row6_col11" class="data row6 col11">3.000000</td>
-<td id="T_b8fe9_row6_col12" class="data row6 col12">7.300000</td>
-<td id="T_b8fe9_row6_col13" class="data row6 col13">spa, wifi, gym, parking, pool</td>
+<td id="T_252df_row6_col0" class="data row6 col0">A00162</td>
+<td id="T_252df_row6_col1" class="data row6 col1">B00151</td>
+<td id="T_252df_row6_col2" class="data row6 col2">1</td>
+<td id="T_252df_row6_col3" class="data row6 col3">Palace Central</td>
+<td id="T_252df_row6_col4" class="data row6 col4">Avenida Copacabana, 3565</td>
+<td id="T_252df_row6_col5" class="data row6 col5">Belo Horizonte</td>
+<td id="T_252df_row6_col6" class="data row6 col6">BR</td>
+<td id="T_252df_row6_col7" class="data row6 col7">-19.939555</td>
+<td id="T_252df_row6_col8" class="data row6 col8">-43.944223</td>
+<td id="T_252df_row6_col9" class="data row6 col9">4.500000</td>
+<td id="T_252df_row6_col10" class="data row6 col10">842.000000</td>
+<td id="T_252df_row6_col11" class="data row6 col11">3.000000</td>
+<td id="T_252df_row6_col12" class="data row6 col12">7.300000</td>
+<td id="T_252df_row6_col13" class="data row6 col13">spa, wifi, gym, parking, pool</td>
 </tr>
 <tr class="even">
-<td id="T_b8fe9_row7_col0" class="data row7 col0">A00163</td>
-<td id="T_b8fe9_row7_col1" class="data row7 col1">B00152</td>
-<td id="T_b8fe9_row7_col2" class="data row7 col2">1</td>
-<td id="T_b8fe9_row7_col3" class="data row7 col3">Residency Paulista</td>
-<td id="T_b8fe9_row7_col4" class="data row7 col4">Rua Europa, 1914</td>
-<td id="T_b8fe9_row7_col5" class="data row7 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row7_col6" class="data row7 col6">BR</td>
-<td id="T_b8fe9_row7_col7" class="data row7 col7">-20.012700</td>
-<td id="T_b8fe9_row7_col8" class="data row7 col8">-43.780297</td>
-<td id="T_b8fe9_row7_col9" class="data row7 col9">5.000000</td>
-<td id="T_b8fe9_row7_col10" class="data row7 col10">332.000000</td>
-<td id="T_b8fe9_row7_col11" class="data row7 col11">4.000000</td>
-<td id="T_b8fe9_row7_col12" class="data row7 col12">9.100000</td>
-<td id="T_b8fe9_row7_col13" class="data row7 col13">wifi, spa, gym</td>
+<td id="T_252df_row7_col0" class="data row7 col0">A00163</td>
+<td id="T_252df_row7_col1" class="data row7 col1">B00152</td>
+<td id="T_252df_row7_col2" class="data row7 col2">1</td>
+<td id="T_252df_row7_col3" class="data row7 col3">Residency Paulista</td>
+<td id="T_252df_row7_col4" class="data row7 col4">Rua Europa, 1914</td>
+<td id="T_252df_row7_col5" class="data row7 col5">Belo Horizonte</td>
+<td id="T_252df_row7_col6" class="data row7 col6">BR</td>
+<td id="T_252df_row7_col7" class="data row7 col7">-20.012700</td>
+<td id="T_252df_row7_col8" class="data row7 col8">-43.780297</td>
+<td id="T_252df_row7_col9" class="data row7 col9">5.000000</td>
+<td id="T_252df_row7_col10" class="data row7 col10">332.000000</td>
+<td id="T_252df_row7_col11" class="data row7 col11">4.000000</td>
+<td id="T_252df_row7_col12" class="data row7 col12">9.100000</td>
+<td id="T_252df_row7_col13" class="data row7 col13">wifi, spa, gym</td>
 </tr>
 <tr class="odd">
-<td id="T_b8fe9_row8_col0" class="data row8 col0">A00183</td>
-<td id="T_b8fe9_row8_col1" class="data row8 col1">B00172</td>
-<td id="T_b8fe9_row8_col2" class="data row8 col2">1</td>
-<td id="T_b8fe9_row8_col3" class="data row8 col3">Inn Europa</td>
-<td id="T_b8fe9_row8_col4" class="data row8 col4">Street das Flores, 9580</td>
-<td id="T_b8fe9_row8_col5" class="data row8 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row8_col6" class="data row8 col6">BR</td>
-<td id="T_b8fe9_row8_col7" class="data row8 col7">-19.872694</td>
-<td id="T_b8fe9_row8_col8" class="data row8 col8">-43.793548</td>
-<td id="T_b8fe9_row8_col9" class="data row8 col9">3.800000</td>
-<td id="T_b8fe9_row8_col10" class="data row8 col10">602.000000</td>
-<td id="T_b8fe9_row8_col11" class="data row8 col11">3.000000</td>
-<td id="T_b8fe9_row8_col12" class="data row8 col12">7.200000</td>
-<td id="T_b8fe9_row8_col13" class="data row8 col13">restaurant, wifi, spa, bar, gym</td>
+<td id="T_252df_row8_col0" class="data row8 col0">A00183</td>
+<td id="T_252df_row8_col1" class="data row8 col1">B00172</td>
+<td id="T_252df_row8_col2" class="data row8 col2">1</td>
+<td id="T_252df_row8_col3" class="data row8 col3">Inn Europa</td>
+<td id="T_252df_row8_col4" class="data row8 col4">Street das Flores, 9580</td>
+<td id="T_252df_row8_col5" class="data row8 col5">Belo Horizonte</td>
+<td id="T_252df_row8_col6" class="data row8 col6">BR</td>
+<td id="T_252df_row8_col7" class="data row8 col7">-19.872694</td>
+<td id="T_252df_row8_col8" class="data row8 col8">-43.793548</td>
+<td id="T_252df_row8_col9" class="data row8 col9">3.800000</td>
+<td id="T_252df_row8_col10" class="data row8 col10">602.000000</td>
+<td id="T_252df_row8_col11" class="data row8 col11">3.000000</td>
+<td id="T_252df_row8_col12" class="data row8 col12">7.200000</td>
+<td id="T_252df_row8_col13" class="data row8 col13">restaurant, wifi, spa, bar, gym</td>
 </tr>
 <tr class="even">
-<td id="T_b8fe9_row9_col0" class="data row9 col0">A00187</td>
-<td id="T_b8fe9_row9_col1" class="data row9 col1">B00176</td>
-<td id="T_b8fe9_row9_col2" class="data row9 col2">1</td>
-<td id="T_b8fe9_row9_col3" class="data row9 col3">Inn Lumière</td>
-<td id="T_b8fe9_row9_col4" class="data row9 col4">St Augusta, 1391</td>
-<td id="T_b8fe9_row9_col5" class="data row9 col5">Belo Horizonte</td>
-<td id="T_b8fe9_row9_col6" class="data row9 col6">BR</td>
-<td id="T_b8fe9_row9_col7" class="data row9 col7">-19.924547</td>
-<td id="T_b8fe9_row9_col8" class="data row9 col8">-43.940387</td>
-<td id="T_b8fe9_row9_col9" class="data row9 col9">4.700000</td>
-<td id="T_b8fe9_row9_col10" class="data row9 col10">492.000000</td>
-<td id="T_b8fe9_row9_col11" class="data row9 col11">4.000000</td>
-<td id="T_b8fe9_row9_col12" class="data row9 col12">9.000000</td>
-<td id="T_b8fe9_row9_col13" class="data row9 col13">wifi, restaurant, spa</td>
+<td id="T_252df_row9_col0" class="data row9 col0">A00187</td>
+<td id="T_252df_row9_col1" class="data row9 col1">B00176</td>
+<td id="T_252df_row9_col2" class="data row9 col2">1</td>
+<td id="T_252df_row9_col3" class="data row9 col3">Inn Lumière</td>
+<td id="T_252df_row9_col4" class="data row9 col4">St Augusta, 1391</td>
+<td id="T_252df_row9_col5" class="data row9 col5">Belo Horizonte</td>
+<td id="T_252df_row9_col6" class="data row9 col6">BR</td>
+<td id="T_252df_row9_col7" class="data row9 col7">-19.924547</td>
+<td id="T_252df_row9_col8" class="data row9 col8">-43.940387</td>
+<td id="T_252df_row9_col9" class="data row9 col9">4.700000</td>
+<td id="T_252df_row9_col10" class="data row9 col10">492.000000</td>
+<td id="T_252df_row9_col11" class="data row9 col11">4.000000</td>
+<td id="T_252df_row9_col12" class="data row9 col12">9.000000</td>
+<td id="T_252df_row9_col13" class="data row9 col13">wifi, restaurant, spa</td>
 </tr>
 </tbody>
 </table>

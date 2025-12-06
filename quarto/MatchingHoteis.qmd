@@ -17,21 +17,21 @@ jupyter: python3
 
 # Introduction
 
-This project tackles the challenge of merging two heterogeneous hotel datasets (`hotels_A.csv` and `hotels_B.csv`) without shared keys, mimicking real-world data integration in travel platforms (e.g., unifying listings from Booking.com and Expedia for personalized recommendations). The primary goals are: (1) develop a scalable matching algorithm using textual and geographic similarities to identify duplicate entities; and (2) enrich matched records via a simulated RESTful API, adding attributes like star ratings, review scores, and amenities.
+This project tackles the challenge of merging two heterogeneous hotel datasets (hotels_A.csv and hotels_B.csv) without shared keys, mimicking real-world data integration in travel platforms (e.g., unifying listings from Booking.com and Expedia for personalized recommendations). The primary goals are: (1) develop a scalable matching algorithm using textual and geographic similarities to identify duplicate entities; and (2) enrich matched records via a simulated RESTful API, adding attributes like star ratings, review scores, and amenities.
 
-The solution employs rule-based heuristics optimized for efficiency: multi-level blocking to prune candidates, Levenshtein distance for string similarity, and Haversine formula for geolocation. A labeled training set (`train.csv`) enables hyperparameter tuning and validation, achieving a perfect F1-score of 1.0—even on unseen data via 80/20 holdout split—demonstrating strong generalization. This pipeline supports applications like duplicate detection, enhanced search, and improved user experiences in hospitality tech, reducing manual curation costs by up to 90% through automated matching.
+The solution employs rule-based heuristics optimized for efficiency: multi-level blocking to prune candidates, Levenshtein distance for string similarity, and Haversine formula for geolocation. A labeled training set (train.csv) enables hyperparameter tuning and validation, achieving a perfect F1-score of 1.0—even on unseen data via 80/20 holdout split—demonstrating strong generalization. This pipeline supports applications like duplicate detection, enhanced search, and improved user experiences in hospitality tech, reducing manual curation costs by up to 90% through automated matching.
 
 Key innovations include hierarchical blocking (city-country + geo-radius) for computational savings and flexible matching rules to handle noisy real-world data (e.g., address variations). The project is production-ready, with a Jupyter notebook for exploration and a Python script for batch execution.
 
 # Project Structure
 
-The workflow follows an end-to-end data science pipeline: exploratory data analysis (EDA), preprocessing, candidate generation via blocking, similarity computation, threshold optimization with cross-validation, entity matching, API enrichment, and evaluation. Implementation uses Python (Pandas, NumPy, Levenshtein) and is deployable as a standalone script. Dependencies are managed via `requirements.txt`, with a mock FastAPI for enrichment simulation.
+The workflow follows an end-to-end data science pipeline: exploratory data analysis (EDA), preprocessing, candidate generation via blocking, similarity computation, threshold optimization with cross-validation, entity matching, API enrichment, and evaluation. Implementation uses Python (Pandas, NumPy, Levenshtein) and is deployable as a standalone script. Dependencies are managed via requirements.txt, with a mock FastAPI for enrichment simulation.
 
 ## Data Sources
 
-- `hotels_A.csv` and `hotels_B.csv`: Core datasets with 436 and 425 records, respectively, featuring attributes like `id`, `hotel_name`, `address`, `city`, `country`, `latitude`, `longitude`, `rating` (2.3-5.0 scale), and `reviews_count` (1-1,360).
-- `train.csv`: Labeled pairs (332 total) for supervised validation, with `id_A`, `id_B`, and `is_match` (0/1; ~75% positives, reflecting synthetic duplicates).
-- Mock API (`mock_api.py`): Simulates external enrichment, returning deterministic attributes (stars: 3-5; score: 7.0-9.7; amenities: e.g., "wifi, pool") based on hashed inputs.
+- hotels_A.csv and hotels_B.csv: Core datasets with 436 and 425 records, respectively, featuring attributes like id, hotel_name, address, city, country, latitude, longitude, rating, and reviews_count (1-1,360).
+- train.csv: Labeled pairs (332 total) for supervised validation, with id_A, id_B, and is_match (0/1).;
+- Mock API (mock_api.py): Simulates external enrichment, returning deterministic attributes (stars: 3-5; score: 7.0-9.7; amenities: e.g., "wifi, pool") based on hashed inputs.
 
 ```{python}
 #| include: false
@@ -54,8 +54,6 @@ train_truth_df = pd.read_csv('train.csv')
 ```
 
 # Exploratory Data Analysis (EDA)
-
-EDA confirms data quality and identifies preprocessing needs. Both datasets are clean (no nulls/duplicates), with consistent schemas and geographic focus (Europe/Brazil cities). Ratings show moderate variance (mean ~4.0), while reviews skew low (median ~400), typical for simulated listings. High match rate in train (~75%) suggests designed positives, but blocking is crucial to avoid O(n²) explosion (185k+ pairs).
 
 ###### Dataset Info for hotels_A:
 ```{python}
@@ -111,6 +109,8 @@ hotels_A.sample(5)
 ```{python}
 hotels_B.sample(5)
 ```
+
+EDA confirms data quality and identifies preprocessing needs. Both datasets are clean (no nulls/duplicates), with consistent schemas and geographic focus (Europe/Brazil cities).
 
 Samples reveal noise: Generic prefixes ("Inn", "Grand"), abbreviations ("St.", "Av."), and numbers in addresses. This motivates targeted cleaning to boost Levenshtein accuracy
 
@@ -301,7 +301,7 @@ Core: Rule-based classifier with tunable thresholds on similarities (Levenshtein
 
 
 ###### 80/20 Holdout Split
-To mitigate overfitting (e.g., thresholds "memorizing" train patterns), split labeled data: 80% for tuning, 20% unseen for F1 validation. Stratified by `is_match` preserves balance (~75% positives).
+To mitigate overfitting (e.g., thresholds "memorizing" train patterns), split labeled data: 80% for tuning, 20% unseen for F1 validation. Stratified by is_match preserves balance (~75% positives).
 ```{python}
 #Split 80/20
 train_split, val_split = train_test_split(
@@ -370,7 +370,7 @@ def apply_matching_rules(
 ```
 
 ## Grid Search and Threshold Optimization:
-Tested 30 combinations (name: [0.75,0.80]; addr: [0.50,0.70,0.90]; geo: [0.5-0.9km]) on train_split. Flexible thresholds: name=0.95, geo=0.5km.
+Tested 30 combinations:
 
 ```{python}
 # Otimização de Thresholds e Visualização
@@ -508,19 +508,17 @@ F1=1.0 on val_split (TP=50, FP/FN=0)—zero gap from train, confirming robustnes
 
 # API Enrichment
 
-Post-matching, the pipeline enriches confirmed duplicates (predicted_match=1) with external data via a simulated RESTful API. This step adds business value: e.g., filtering by amenities ("spa" hotels) or scoring for recommendations. The mock API (`mock_api.py`) uses FastAPI to expose `/enrich` (POST), accepting JSON payload `{hotel_name, city, country}` and returning deterministic attributes based on a hashed key (ensuring reproducibility for testing). Amenities sampled from a pool (e.g., "wifi", "pool", "gym"); stars (3-5); score (7.0-9.7).
+This step adds business value: e.g., filtering by amenities ("spa" hotels) or scoring for recommendations. The mock API uses FastAPI to expose /enrich (POST), accepting JSON payload {hotel_name, city, country} and returning deterministic attributes based on a hashed key (ensuring reproducibility for testing). Amenities sampled from a pool (e.g., "wifi", "pool", "gym"); stars (3-5); score (7.0-9.7).
 
 Key optimizations:
-- **Deduplication**: Enrich only unique profiles (drop_duplicates on hotel_name/city/country), reducing ~150 matches to ~50 calls.
-- **Health Check**: Verify `/healthz` before batch; timeout=5s per request.
-- **Error Handling**: Fallback to `None` if API offline (graceful degradation; non-enriched fields marked NA).
-- **Determinism**: Hash-based random seed (e.g., `random.Random(hash(key) % (2**32-1))`) simulates real APIs (e.g., Google Places) without external deps.
-
-In production, replace with real endpoints (e.g., TripAdvisor API); here, it validates integration (e.g., ~80% success rate in tests).
+- Deduplication: Enrich only unique profiles (drop_duplicates on hotel_name/city/country), reducing ~150 matches to ~50 calls.
+- Health Check: Verify /healthz before batch; timeout=5s per request.
+- Error Handling: Fallback to None if API offline (graceful degradation; non-enriched fields marked NA).
+- Determinism: Hash-based random seed simulates real APIs (e.g., Google Places) without external deps.
 
 ### API Implementation Overview
 
-The mock server runs locally (`uvicorn mock_api:app --host 0.0.0.0 --port 8000`). 
+The mock server runs locally. 
 
 ### Video Demonstration: API Enrichment Simulation
 
@@ -536,7 +534,7 @@ The final deliverable unifies matches with API data.
 # Load and style enriched output for visualization
 enriched_df = pd.read_csv('output_final_enriquecido.csv')
 styled_table = enriched_df.head(10).style \
-    .set_caption("Enriched Matches Sample)") \
+    .set_caption("Enriched Matches Sample") \
     .background_gradient(subset=['enriched_category_stars', 'enriched_review_score'], cmap='YlGn') \
     .apply(lambda row: ['background-color: #a5b8eeff' if row['predicted_match'] == 1 else '' for _ in row], axis=1) \
     .set_properties(**{'text-align': 'left', 'font-size': '12px'}) \
