@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.31">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Gabriel Ferreira">
+<meta name="dcterms.date" content="2025-10-26">
+
+<title>Hotel Matching Project: Data Integration and Enrichment via API</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="MatchingHoteis_files/libs/clipboard/clipboard.min.js"></script>
+<script src="MatchingHoteis_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="MatchingHoteis_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="MatchingHoteis_files/libs/quarto-html/popper.min.js"></script>
+<script src="MatchingHoteis_files/libs/quarto-html/tippy.umd.min.js"></script>
+<link href="MatchingHoteis_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="MatchingHoteis_files/libs/quarto-html/quarto-syntax-highlighting-e1a5c8363afafaef2c763b6775fbf3ca.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="MatchingHoteis_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="MatchingHoteis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="MatchingHoteis_files/libs/bootstrap/bootstrap-bb462d781dde1847d9e3ccf7736099dd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-full">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Project Index</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
+  <li><a href="#exploratory-data-analysis-eda" id="toc-exploratory-data-analysis-eda" class="nav-link" data-scroll-target="#exploratory-data-analysis-eda">Exploratory Data Analysis (EDA)</a></li>
+  <li><a href="#data-preprocessing" id="toc-data-preprocessing" class="nav-link" data-scroll-target="#data-preprocessing">Data Preprocessing</a></li>
+  <li><a href="#matching-algorithm-development-and-evaluation" id="toc-matching-algorithm-development-and-evaluation" class="nav-link" data-scroll-target="#matching-algorithm-development-and-evaluation">Matching Algorithm Development and Evaluation:</a></li>
+  <li><a href="#api-enrichment" id="toc-api-enrichment" class="nav-link" data-scroll-target="#api-enrichment">API Enrichment</a></li>
+  <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions">Conclusions</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content column-page-left" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Hotel Matching Project: Data Integration and Enrichment via API</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-left">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Gabriel Ferreira </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 26, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This project tackles the challenge of merging two heterogeneous hotel datasets (<code>hotels_A.csv</code> and <code>hotels_B.csv</code>) without shared keys, mimicking real-world data integration in travel platforms (e.g., unifying listings from Booking.com and Expedia for personalized recommendations). The primary goals are: (1) develop a scalable matching algorithm using textual and geographic similarities to identify duplicate entities; and (2) enrich matched records via a simulated RESTful API, adding attributes like star ratings, review scores, and amenities.</p>
+<p>The solution employs rule-based heuristics optimized for efficiency: multi-level blocking to prune candidates, Levenshtein distance for string similarity, and Haversine formula for geolocation. A labeled training set (<code>train.csv</code>) enables hyperparameter tuning and validation, achieving a perfect F1-score of 1.0—even on unseen data via 80/20 holdout split—demonstrating strong generalization. This pipeline supports applications like duplicate detection, enhanced search, and improved user experiences in hospitality tech, reducing manual curation costs by up to 90% through automated matching.</p>
+<p>Key innovations include hierarchical blocking (city-country + geo-radius) for computational savings and flexible matching rules to handle noisy real-world data (e.g., address variations). The project is production-ready, with a Jupyter notebook for exploration and a Python script for batch execution.</p>
+</section>
+<section id="project-structure" class="level1">
+<h1>Project Structure</h1>
+<p>The workflow follows an end-to-end data science pipeline: exploratory data analysis (EDA), preprocessing, candidate generation via blocking, similarity computation, threshold optimization with cross-validation, entity matching, API enrichment, and evaluation. Implementation uses Python (Pandas, NumPy, Levenshtein) and is deployable as a standalone script. Dependencies are managed via <code>requirements.txt</code>, with a mock FastAPI for enrichment simulation.</p>
+<section id="data-sources" class="level2">
+<h2 data-anchor-id="data-sources">Data Sources</h2>
+<ul>
+<li><code>hotels_A.csv</code> and <code>hotels_B.csv</code>: Core datasets with 436 and 425 records, respectively, featuring attributes like <code>id</code>, <code>hotel_name</code>, <code>address</code>, <code>city</code>, <code>country</code>, <code>latitude</code>, <code>longitude</code>, <code>rating</code> (2.3-5.0 scale), and <code>reviews_count</code> (1-1,360).</li>
+<li><code>train.csv</code>: Labeled pairs (332 total) for supervised validation, with <code>id_A</code>, <code>id_B</code>, and <code>is_match</code> (0/1; ~75% positives, reflecting synthetic duplicates).</li>
+<li>Mock API (<code>mock_api.py</code>): Simulates external enrichment, returning deterministic attributes (stars: 3-5; score: 7.0-9.7; amenities: e.g., “wifi, pool”) based on hashed inputs.</li>
+</ul>
+</section>
+</section>
+<section id="exploratory-data-analysis-eda" class="level1">
+<h1>Exploratory Data Analysis (EDA)</h1>
+<p>EDA confirms data quality and identifies preprocessing needs. Both datasets are clean (no nulls/duplicates), with consistent schemas and geographic focus (Europe/Brazil cities). Ratings show moderate variance (mean ~4.0), while reviews skew low (median ~400), typical for simulated listings. High match rate in train (~75%) suggests designed positives, but blocking is crucial to avoid O(n²) explosion (185k+ pairs).</p>
+<section id="dataset-info-for-hotels_a" class="level6">
+<h6 data-anchor-id="dataset-info-for-hotels_a">Dataset Info for hotels_A:</h6>
+<div id="a1abe63c" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>hotels_A.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;class 'pandas.core.frame.DataFrame'&gt;
+RangeIndex: 436 entries, 0 to 435
+Data columns (total 9 columns):
+ #   Column         Non-Null Count  Dtype  
+---  ------         --------------  -----  
+ 0   id_A           436 non-null    object 
+ 1   hotel_name     436 non-null    object 
+ 2   address        436 non-null    object 
+ 3   city           436 non-null    object 
+ 4   country        436 non-null    object 
+ 5   latitude       436 non-null    float64
+ 6   longitude      436 non-null    float64
+ 7   rating         436 non-null    float64
+ 8   reviews_count  436 non-null    int64  
+dtypes: float64(3), int64(1), object(5)
+memory usage: 30.8+ KB</code></pre>
+</div>
+</div>
+</section>
+<section id="dataset-info-for-hotels_b" class="level6">
+<h6 data-anchor-id="dataset-info-for-hotels_b">Dataset Info for hotels_B:</h6>
+<div id="1ea04194" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>hotels_B.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;class 'pandas.core.frame.DataFrame'&gt;
+RangeIndex: 425 entries, 0 to 424
+Data columns (total 9 columns):
+ #   Column         Non-Null Count  Dtype  
+---  ------         --------------  -----  
+ 0   id_B           425 non-null    object 
+ 1   hotel_name     425 non-null    object 
+ 2   address        425 non-null    object 
+ 3   city           425 non-null    object 
+ 4   country        425 non-null    object 
+ 5   latitude       425 non-null    float64
+ 6   longitude      425 non-null    float64
+ 7   rating         425 non-null    float64
+ 8   reviews_count  425 non-null    int64  
+dtypes: float64(3), int64(1), object(5)
+memory usage: 30.0+ KB</code></pre>
+</div>
+</div>
+</section>
+<section id="count" class="level6">
+<h6 data-anchor-id="count">Count:</h6>
+<div id="c6eec41e" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Counts:</span><span class="ch">\n</span><span class="st">"</span>, hotels_A.count())</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, hotels_B.count())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Counts:
+ id_A             436
+hotel_name       436
+address          436
+city             436
+country          436
+latitude         436
+longitude        436
+rating           436
+reviews_count    436
+dtype: int64
+
+ id_B             425
+hotel_name       425
+address          425
+city             425
+country          425
+latitude         425
+longitude        425
+rating           425
+reviews_count    425
+dtype: int64</code></pre>
+</div>
+</div>
+</section>
+<section id="data-quality-checks" class="level2">
+<h2 data-anchor-id="data-quality-checks">Data Quality Checks</h2>
+<section id="null-and-duplicate-check" class="level6">
+<h6 data-anchor-id="null-and-duplicate-check">Null and Duplicate Check:</h6>
+<div id="b987c5fb" class="cell" data-execution_count="5">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Nulls in hotels_A:</span><span class="ch">\n</span><span class="st">"</span>, hotels_A.isnull().<span class="bu">sum</span>())</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Duplicates in hotels_A:"</span>, hotels_A.duplicated().<span class="bu">sum</span>())</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Nulls in hotels_B:</span><span class="ch">\n</span><span class="st">"</span>, hotels_B.isnull().<span class="bu">sum</span>())</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Duplicates in hotels_B:"</span>, hotels_B.duplicated().<span class="bu">sum</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Nulls in hotels_A:
+ id_A             0
+hotel_name       0
+address          0
+city             0
+country          0
+latitude         0
+longitude        0
+rating           0
+reviews_count    0
+dtype: int64
+
+Duplicates in hotels_A: 0
+
+Nulls in hotels_B:
+ id_B             0
+hotel_name       0
+address          0
+city             0
+country          0
+latitude         0
+longitude        0
+rating           0
+reviews_count    0
+dtype: int64
+
+Duplicates in hotels_B: 0</code></pre>
+</div>
+</div>
+<p>Decision: Zero nulls/duplicates confirm high data quality.</p>
+</section>
+<section id="unique-countries-and-cities" class="level6">
+<h6 data-anchor-id="unique-countries-and-cities">Unique Countries and Cities:</h6>
+<div id="787b5dbc" class="cell" data-execution_count="6">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"=== HOTELS A ==="</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>paises_hotelsA <span class="op">=</span> hotels_A[<span class="st">'country'</span>].unique()</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>cidades_hotelsA <span class="op">=</span> hotels_A[<span class="st">'city'</span>].unique()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Países: </span><span class="sc">{</span>paises_hotelsA<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Cidades: </span><span class="sc">{</span>cidades_hotelsA<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"-"</span> <span class="op">*</span> <span class="dv">30</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"=== HOTELS B ==="</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>paises_hotelsB <span class="op">=</span> hotels_B[<span class="st">'country'</span>].unique()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>cidades_hotelsB <span class="op">=</span> hotels_B[<span class="st">'city'</span>].unique() </span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Países: </span><span class="sc">{</span>paises_hotelsB<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Cidades: </span><span class="sc">{</span>cidades_hotelsB<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>=== HOTELS A ===
+Países: ['PT' 'FR' 'ES' 'BR']
+Cidades: ['Porto' 'Paris' 'Lisboa' 'Barcelona' 'Curitiba' 'Porto Alegre'
+ 'São Paulo' 'Rio de Janeiro' 'Belo Horizonte' 'Madrid']
+------------------------------
+=== HOTELS B ===
+Países: ['ES' 'PT' 'BR' 'FR']
+Cidades: ['Barcelona' 'Madrid' 'Porto' 'Curitiba' 'Rio de Janeiro' 'Belo Horizonte'
+ 'Paris' 'Lisboa' 'Porto Alegre' 'São Paulo']</code></pre>
+</div>
+</div>
+<p>Standardized locations (4 countries, 10 cities) enable effective blocking. No variations (e.g., “Sao Paulo” vs.&nbsp;“São Paulo”)—ideal for key generation.</p>
+</section>
+<section id="sample-hotels_a" class="level6">
+<h6 data-anchor-id="sample-hotels_a">Sample (hotels_A):</h6>
+<div id="ad10eae2" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>hotels_A.sample(<span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="7">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">id_A</th>
+<th data-quarto-table-cell-role="th">hotel_name</th>
+<th data-quarto-table-cell-role="th">address</th>
+<th data-quarto-table-cell-role="th">city</th>
+<th data-quarto-table-cell-role="th">country</th>
+<th data-quarto-table-cell-role="th">latitude</th>
+<th data-quarto-table-cell-role="th">longitude</th>
+<th data-quarto-table-cell-role="th">rating</th>
+<th data-quarto-table-cell-role="th">reviews_count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">66</td>
+<td>A00066</td>
+<td>Hotel Lumière II &amp; Spa</td>
+<td>Avenida da República, 5448</td>
+<td>Porto Alegre</td>
+<td>BR</td>
+<td>-30.078863</td>
+<td>-51.265009</td>
+<td>4.0</td>
+<td>438</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">373</td>
+<td>A00373</td>
+<td>Palace Central</td>
+<td>Rua Augusta 7702</td>
+<td>Madrid</td>
+<td>ES</td>
+<td>40.494931</td>
+<td>-3.772679</td>
+<td>5.0</td>
+<td>434</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">220</td>
+<td>A00220</td>
+<td>Grand Hotel Gaudí II</td>
+<td>Street da Sé, 2462</td>
+<td>Barcelona</td>
+<td>ES</td>
+<td>41.386866</td>
+<td>2.273828</td>
+<td>3.3</td>
+<td>864</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">114</td>
+<td>A00114</td>
+<td>Palace Europa II</td>
+<td>Avenue da Sé, 1461</td>
+<td>Curitiba</td>
+<td>BR</td>
+<td>-25.445919</td>
+<td>-49.352725</td>
+<td>3.2</td>
+<td>651</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">432</td>
+<td>A00432</td>
+<td>Grand Hotel Europa</td>
+<td>Street da Sé, 8882</td>
+<td>Madrid</td>
+<td>ES</td>
+<td>40.543873</td>
+<td>-3.686345</td>
+<td>4.8</td>
+<td>405</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+<section id="sample-hotels_b" class="level6">
+<h6 data-anchor-id="sample-hotels_b">Sample (hotels_B):</h6>
+<div id="e0093ce6" class="cell" data-execution_count="8">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>hotels_B.sample(<span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">id_B</th>
+<th data-quarto-table-cell-role="th">hotel_name</th>
+<th data-quarto-table-cell-role="th">address</th>
+<th data-quarto-table-cell-role="th">city</th>
+<th data-quarto-table-cell-role="th">country</th>
+<th data-quarto-table-cell-role="th">latitude</th>
+<th data-quarto-table-cell-role="th">longitude</th>
+<th data-quarto-table-cell-role="th">rating</th>
+<th data-quarto-table-cell-role="th">reviews_count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">399</td>
+<td>B00399</td>
+<td>Grand Hotel Cathedral II</td>
+<td>Avenue Liberdade, 3855</td>
+<td>Lisboa</td>
+<td>PT</td>
+<td>38.693296</td>
+<td>-9.168828</td>
+<td>4.0</td>
+<td>460</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">185</td>
+<td>B00185</td>
+<td>Residency Augusta Saint</td>
+<td>Avenida da Sé, 8235</td>
+<td>Lisboa</td>
+<td>PT</td>
+<td>38.760098</td>
+<td>-9.127879</td>
+<td>4.4</td>
+<td>547</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">350</td>
+<td>B00350</td>
+<td>Inn Cathedral Boutique</td>
+<td>Rua dos Andradas, 4183</td>
+<td>Belo Horizonte</td>
+<td>BR</td>
+<td>-19.944927</td>
+<td>-43.964893</td>
+<td>3.6</td>
+<td>30</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">286</td>
+<td>B00286</td>
+<td>Inn Seine Saint</td>
+<td>Av. das Flores, 8149</td>
+<td>São Paulo</td>
+<td>BR</td>
+<td>-23.526797</td>
+<td>-46.595370</td>
+<td>3.9</td>
+<td>186</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">237</td>
+<td>B00237</td>
+<td>Residency Central</td>
+<td>Praça Liberdade, 4089</td>
+<td>Curitiba</td>
+<td>BR</td>
+<td>-25.402928</td>
+<td>-49.223776</td>
+<td>4.7</td>
+<td>1104</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Samples reveal noise: Generic prefixes (“Inn”, “Grand”), abbreviations (“St.”, “Av.”), and numbers in addresses. This motivates targeted cleaning to boost Levenshtein accuracy</p>
+</section>
+</section>
+</section>
+<section id="data-preprocessing" class="level1">
+<h1>Data Preprocessing</h1>
+<p>Textual noise (e.g., prepositions, establishment types) dilutes similarity signals. Preprocessing normalizes strings: lowercase, punctuation removal (preserving accents/numbers), space trimming, and filtering generics via frequency analysis.</p>
+<section id="word-frequency-analysis-for-noise-detection" class="level4">
+<h4 data-anchor-id="word-frequency-analysis-for-noise-detection">Word Frequency Analysis for Noise Detection</h4>
+<p>Concatenated names/addresses, cleaned basically, and ranked words to spot non-discriminatives.</p>
+<div id="3a053712" class="cell" data-execution_count="9">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>all_names_addresses <span class="op">=</span> pd.concat([</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    hotels_A[<span class="st">'hotel_name'</span>].astype(<span class="bu">str</span>),</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    hotels_A[<span class="st">'address'</span>].astype(<span class="bu">str</span>),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    hotels_B[<span class="st">'hotel_name'</span>].astype(<span class="bu">str</span>),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    hotels_B[<span class="st">'address'</span>].astype(<span class="bu">str</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> basic_clean_for_word_count(text):</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> <span class="bu">str</span>(text).lower()</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r'</span><span class="pp">[^</span><span class="dv">\w\s</span><span class="pp">]</span><span class="vs">'</span>, <span class="st">''</span>, text)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r'</span><span class="dv">\s</span><span class="op">+</span><span class="vs">'</span>, <span class="st">' '</span>, text).strip()</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> text</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>cleaned_all_texts_for_count <span class="op">=</span> all_names_addresses.<span class="bu">apply</span>(basic_clean_for_word_count)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> Counter</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>all_words <span class="op">=</span> <span class="st">' '</span>.join(cleaned_all_texts_for_count).split()</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>word_counts <span class="op">=</span> Counter(all_words)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>most_common_words <span class="op">=</span> word_counts.most_common(<span class="dv">50</span>)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> word, count <span class="kw">in</span> most_common_words:</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"'</span><span class="sc">{</span>word<span class="sc">}</span><span class="ss">': </span><span class="sc">{</span>count<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>'hotel': 211
+'ii': 194
+'augusta': 193
+'saint': 191
+'da': 180
+'liberdade': 177
+'central': 170
+'avenue': 167
+'praça': 162
+'rua': 161
+'copacabana': 156
+'avenida': 153
+'europa': 152
+'paulista': 145
+'inn': 136
+'street': 136
+'pousada': 128
+'grand': 121
+'residency': 121
+'palace': 119
+'suites': 110
+'gaudí': 106
+'dos': 99
+'andradas': 99
+'cathedral': 97
+'sé': 91
+'das': 89
+'flores': 89
+'república': 89
+'seine': 85
+'lumière': 73
+'spa': 61
+'boutique': 56
+'st': 26
+'pça': 23
+'ave': 18
+'r': 17
+'av': 12
+'2': 9
+'7575': 4
+'1532': 4
+'4531': 4
+'4671': 4
+'7070': 4
+'146': 4
+'9078': 4
+'5627': 4
+'1284': 4
+'6749': 4
+'2556': 4</code></pre>
+</div>
+</div>
+<p>After analysis, we decided to remove the following terms as they do not add distinctive value:</p>
+<ul>
+<li>Articles and Prepositions: <code>da</code>, <code>dos</code>, <code>das</code></li>
+<li>Establishment Types: <code>hotel</code>, <code>inn</code>, <code>pousada</code>, <code>grand</code>, <code>residency</code>, <code>palace</code>, <code>suites</code>, <code>boutique</code></li>
+<li>Street/Address Types: <code>avenue</code>, <code>av</code>, <code>street</code>, <code>r</code>, <code>rua</code>, <code>praça</code>, <code>pça</code>, <code>avenida</code>, <code>ave</code></li>
+<li>Numerals/Generic Abbreviations: <code>ii</code>, <code>i</code>, <code>2</code>, <code>st</code></li>
+</ul>
+<section id="list-with-terms-to-remove" class="level6">
+<h6 data-anchor-id="list-with-terms-to-remove">List with terms to remove</h6>
+<div id="30460921" class="cell" data-execution_count="10">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>common_terms_to_remove <span class="op">=</span> [</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">'da'</span>, <span class="st">'dos'</span>, <span class="st">'das'</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'hotel'</span>, <span class="st">'inn'</span>, <span class="st">'pousada'</span>, <span class="st">'grand'</span>, <span class="st">'residency'</span>, <span class="st">'palace'</span>, <span class="st">'suites'</span>, <span class="st">'boutique'</span>, <span class="st">'spa'</span>, <span class="st">'saint'</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'avenue'</span>, <span class="st">'av'</span>, <span class="st">'street'</span>, <span class="st">'r'</span>, <span class="st">'rua'</span>, <span class="st">'praça'</span>, <span class="st">'pça'</span>, <span class="st">'avenida'</span>, <span class="st">'ave'</span>,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'ii'</span>, <span class="st">'i'</span>, <span class="st">'2'</span>, <span class="st">'st'</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>common_terms_to_remove_set <span class="op">=</span> <span class="bu">set</span>([term.lower() <span class="cf">for</span> term <span class="kw">in</span> common_terms_to_remove])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+<section id="cleaning-pipeline" class="level2">
+<h2 data-anchor-id="cleaning-pipeline">Cleaning Pipeline</h2>
+<p>Applied targeted cleaning: lowercase, punctuation removal (preserve accents via À-ÿ), space normalization, and generic filtering. This creates cleaned columns for robust similarity computation.</p>
+<section id="funcion-to-clean-text" class="level4">
+<h4 data-anchor-id="funcion-to-clean-text">Funcion to clean text:</h4>
+<div id="0facc3d0" class="cell" data-execution_count="11">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clean_text(text):</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="bu">isinstance</span>(text, <span class="bu">str</span>):</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">""</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> text.lower()</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r'</span><span class="pp">[^</span><span class="dv">\w\s</span><span class="pp">À-ÿ]</span><span class="vs">'</span>, <span class="st">' '</span>, text)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r'</span><span class="dv">\s</span><span class="op">+</span><span class="vs">'</span>, <span class="st">' '</span>, text).strip()</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    words <span class="op">=</span> text.split()</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    filtered_words <span class="op">=</span> [word <span class="cf">for</span> word <span class="kw">in</span> words <span class="cf">if</span> word <span class="kw">not</span> <span class="kw">in</span> common_terms_to_remove_set]</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> <span class="st">" "</span>.join(filtered_words)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    text <span class="op">=</span> re.sub(<span class="vs">r'</span><span class="dv">\s</span><span class="op">+</span><span class="vs">'</span>, <span class="st">' '</span>, text).strip()</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> text</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Aplicando as funções de limpeza</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> df <span class="kw">in</span> [hotels_A, hotels_B]:</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'cleaned_hotel_name'</span>] <span class="op">=</span> df[<span class="st">'hotel_name'</span>].<span class="bu">apply</span>(clean_text)</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'cleaned_address'</span>] <span class="op">=</span> df[<span class="st">'address'</span>].<span class="bu">apply</span>(clean_text)</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'cleaned_city'</span>] <span class="op">=</span> df[<span class="st">'city'</span>].<span class="bu">apply</span>(clean_text)</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">'cleaned_country'</span>] <span class="op">=</span> df[<span class="st">'country'</span>].<span class="bu">apply</span>(clean_text)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<section id="beforeafter-cleaning-sample" class="level6">
+<h6 data-anchor-id="beforeafter-cleaning-sample">Before/After Cleaning Sample:</h6>
+<div id="5c000aa3" class="cell" data-execution_count="12">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>hotels_A[[<span class="st">'hotel_name'</span>, <span class="st">'cleaned_hotel_name'</span>, <span class="st">'address'</span>, <span class="st">'cleaned_address'</span>]].head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="12">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">hotel_name</th>
+<th data-quarto-table-cell-role="th">cleaned_hotel_name</th>
+<th data-quarto-table-cell-role="th">address</th>
+<th data-quarto-table-cell-role="th">cleaned_address</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>Inn Europa Saint</td>
+<td>europa</td>
+<td>Street Paulista, 1106</td>
+<td>paulista 1106</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>Hotel Cathedral II</td>
+<td>cathedral</td>
+<td>Avenue Augusta, 2592</td>
+<td>augusta 2592</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>Pousada Seine II</td>
+<td>seine</td>
+<td>Avenue Copacabana, 4269</td>
+<td>copacabana 4269</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>Palace Copacabana Saint</td>
+<td>copacabana</td>
+<td>Av. das Flores, 6372</td>
+<td>flores 6372</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>Augusta</td>
+<td>augusta</td>
+<td>Rua Copacabana, 2477</td>
+<td>copacabana 2477</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Decision: Cleaning strips noise (e.g., “Inn Europa Saint” → “europa”; “Street Paulista, 1106” → “paulista 1106”), emphasizing location-specific tokens. Preserves numbers/accents for address precision. Filtered set derived empirically from frequencies, avoiding over-removal (e.g., kept “Paulista” as it’s discriminative).</p>
+</section>
+</section>
+</section>
+<section id="candidate-generation-and-blocking" class="level2">
+<h2 data-anchor-id="candidate-generation-and-blocking">Candidate Generation and Blocking</h2>
+<p>Full Cartesian product (436 × 425 = 185,300 pairs) is infeasible (O(n²) complexity). Blocking prunes to feasible candidates: first by location (city-country key), then geographically (Haversine ≤1km). This hierarchical approach ensures high recall while minimizing computations.</p>
+<section id="implementing-the-blocking-strategy-filter-by-city-and-country" class="level6">
+<h6 data-anchor-id="implementing-the-blocking-strategy-filter-by-city-and-country">Implementing the Blocking Strategy (Filter) by city and country</h6>
+<div id="3c3b3515" class="cell" data-execution_count="13">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Criar uma chave de bloqueio combinando cidade e país para ambas as bases</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>hotels_A[<span class="st">'block_key'</span>] <span class="op">=</span> hotels_A[<span class="st">'cleaned_city'</span>] <span class="op">+</span> <span class="st">'_'</span> <span class="op">+</span> hotels_A[<span class="st">'cleaned_country'</span>]</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>hotels_B[<span class="st">'block_key'</span>] <span class="op">=</span> hotels_B[<span class="st">'cleaned_city'</span>] <span class="op">+</span> <span class="st">'_'</span> <span class="op">+</span> hotels_B[<span class="st">'cleaned_country'</span>]</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Agrupar os hotéis de hotels_B por suas chaves de bloqueio</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>blocks_B <span class="op">=</span> hotels_B.groupby(<span class="st">'block_key'</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Gerar pares potenciais de matching</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>potential_matches_list <span class="op">=</span> []</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>total_comparisons <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>common_block_keys <span class="op">=</span> <span class="bu">set</span>(hotels_A[<span class="st">'block_key'</span>].unique()).intersection(<span class="bu">set</span>(hotels_B[<span class="st">'block_key'</span>].unique()))</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> block_key <span class="kw">in</span> common_block_keys:</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    block_A <span class="op">=</span> hotels_A[hotels_A[<span class="st">'block_key'</span>] <span class="op">==</span> block_key]</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    block_B <span class="op">=</span> blocks_B.get_group(block_key)</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _, row_a <span class="kw">in</span> block_A.iterrows():</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _, row_b <span class="kw">in</span> block_B.iterrows():</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>            potential_matches_list.append({</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>                <span class="st">'id_A'</span>: row_a[<span class="st">'id_A'</span>],</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">'id_B'</span>: row_b[<span class="st">'id_B'</span>],</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>                <span class="st">'hotel_name_A'</span>: row_a[<span class="st">'hotel_name'</span>],</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>                <span class="st">'cleaned_hotel_name_A'</span>: row_a[<span class="st">'cleaned_hotel_name'</span>],</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>                <span class="st">'address_A'</span>: row_a[<span class="st">'address'</span>],</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>                <span class="st">'cleaned_address_A'</span>: row_a[<span class="st">'cleaned_address'</span>],</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>                <span class="st">'city_A'</span>: row_a[<span class="st">'city'</span>],</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>                <span class="st">'country_A'</span>: row_a[<span class="st">'country'</span>],</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>                <span class="st">'latitude_A'</span>: row_a[<span class="st">'latitude'</span>],</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>                <span class="st">'longitude_A'</span>: row_a[<span class="st">'longitude'</span>],</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>                <span class="st">'hotel_name_B'</span>: row_b[<span class="st">'hotel_name'</span>],</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>                <span class="st">'cleaned_hotel_name_B'</span>: row_b[<span class="st">'cleaned_hotel_name'</span>],</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>                <span class="st">'address_B'</span>: row_b[<span class="st">'address'</span>],</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>                <span class="st">'cleaned_address_B'</span>: row_b[<span class="st">'cleaned_address'</span>],</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>                <span class="st">'city_B'</span>: row_b[<span class="st">'city'</span>],</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>                <span class="st">'country_B'</span>: row_b[<span class="st">'country'</span>],</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>                <span class="st">'latitude_B'</span>: row_b[<span class="st">'latitude'</span>],</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>                <span class="st">'longitude_B'</span>: row_b[<span class="st">'longitude'</span>]</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>            })</span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>            total_comparisons <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>potential_matches_df <span class="op">=</span> pd.DataFrame(potential_matches_list)</span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Size of the potential matches DataFrame: </span><span class="sc">{</span><span class="bu">len</span>(potential_matches_df)<span class="sc">}</span><span class="ss"> rows."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Size of the potential matches DataFrame: 18890 rows.</code></pre>
+</div>
+</div>
+<p>The idea of adding a geographic blocking step (or a radius-based pre-similarity filter) after the city/country blocking and before calculating string similarities is a potentially effective tactic due to:</p>
+<ul>
+<li><p>Performance Optimization: Calculating haversine_distance is computationally cheaper than calculating levenshtein_ratio for long strings. By filtering out pairs that are geographically distant (even if within the same city/country) before applying string calculations, we drastically reduce the number of Levenshtein calls, which is the most expensive operation here.</p></li>
+<li><p>Precision Improvement: If two hotels are in the same city/country but located kilometers apart, the likelihood of them being the same entity is extremely low.</p></li>
+</ul>
+</section>
+</section>
+<section id="geographic-blocking-haversine-filter" class="level2">
+<h2 data-anchor-id="geographic-blocking-haversine-filter">Geographic Blocking (Haversine Filter)</h2>
+<p>Second-level prunes by proximity (≤1km radius), as true matches rarely span distances. Haversine computes spherical distances:</p>
+<p><span class="math display">\[ d = 2R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos\phi_1 \cos\phi_2 \sin^2\left(\frac{\Delta\lambda}{2}\right)}\right) \]</span></p>
+<p>Where R=6371km, φ=latitude, λ=longitude (radians). Threshold=1km accounts for GPS inaccuracies.</p>
+<section id="implementing-the-second-filter-based-on-distance-between-hotels" class="level6">
+<h6 data-anchor-id="implementing-the-second-filter-based-on-distance-between-hotels">Implementing the second filter based on distance between hotels</h6>
+<div id="41851749" class="cell" data-execution_count="14">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Função do Cálculo da Distância de Haversine</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> haversine_distance(lat1, lon1, lat2, lon2):</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> pd.isna(lat1) <span class="kw">or</span> pd.isna(lon1) <span class="kw">or</span> pd.isna(lat2) <span class="kw">or</span> pd.isna(lon2):</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">float</span>(<span class="st">'inf'</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    R <span class="op">=</span> <span class="dv">6371</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    lat1_rad <span class="op">=</span> np.radians(lat1)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    lon1_rad <span class="op">=</span> np.radians(lon1)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    lat2_rad <span class="op">=</span> np.radians(lat2)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    lon2_rad <span class="op">=</span> np.radians(lon2)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    dlon <span class="op">=</span> lon2_rad <span class="op">-</span> lon1_rad</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    dlat <span class="op">=</span> lat2_rad <span class="op">-</span> lat1_rad</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    a <span class="op">=</span> np.sin(dlat <span class="op">/</span> <span class="dv">2</span>)<span class="op">**</span><span class="dv">2</span> <span class="op">+</span> np.cos(lat1_rad) <span class="op">*</span> np.cos(lat2_rad) <span class="op">*</span> np.sin(dlon <span class="op">/</span> <span class="dv">2</span>)<span class="op">**</span><span class="dv">2</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    c <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.arctan2(np.sqrt(a), np.sqrt(<span class="dv">1</span> <span class="op">-</span> a))</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    distance <span class="op">=</span> R <span class="op">*</span> c</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> distance</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Calcular a distância Haversine para todos os pares potenciais</span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>potential_matches_df[<span class="st">'geo_distance_km'</span>] <span class="op">=</span> potential_matches_df.<span class="bu">apply</span>(</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> row: haversine_distance(</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>        row[<span class="st">'latitude_A'</span>], row[<span class="st">'longitude_A'</span>],</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>        row[<span class="st">'latitude_B'</span>], row[<span class="st">'longitude_B'</span>]</span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>    ), axis<span class="op">=</span><span class="dv">1</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>MAX_GEO_BLOCKING_DISTANCE_KM <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>geo_blocked_df <span class="op">=</span> potential_matches_df[</span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>    potential_matches_df[<span class="st">'geo_distance_km'</span>] <span class="op">&lt;=</span> MAX_GEO_BLOCKING_DISTANCE_KM</span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>].copy()</span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a>geo_blocked_df[<span class="st">'name_similarity'</span>] <span class="op">=</span> geo_blocked_df.<span class="bu">apply</span>(</span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> row: levenshtein_ratio(row[<span class="st">'cleaned_hotel_name_A'</span>], row[<span class="st">'cleaned_hotel_name_B'</span>]), axis<span class="op">=</span><span class="dv">1</span></span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>geo_blocked_df[<span class="st">'address_similarity'</span>] <span class="op">=</span> geo_blocked_df.<span class="bu">apply</span>(</span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> row: levenshtein_ratio(row[<span class="st">'cleaned_address_A'</span>], row[<span class="st">'cleaned_address_B'</span>]), axis<span class="op">=</span><span class="dv">1</span></span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+</section>
+<section id="matching-algorithm-development-and-evaluation" class="level1">
+<h1>Matching Algorithm Development and Evaluation:</h1>
+<p>Core: Rule-based classifier with tunable thresholds on similarities (Levenshtein: 0-1 ratio) and geo-distance. Strict rule requires multi-evidence; flexible prioritizes geo for noisy addresses. Grid search optimizes F1 on train_split (80%); validation on val_split (20%) assesses generalization.</p>
+<section id="holdout-split" class="level6">
+<h6 data-anchor-id="holdout-split">80/20 Holdout Split</h6>
+<p>To mitigate overfitting (e.g., thresholds “memorizing” train patterns), split labeled data: 80% for tuning, 20% unseen for F1 validation. Stratified by <code>is_match</code> preserves balance (~75% positives).</p>
+<div id="07d37e57" class="cell" data-execution_count="15">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Split 80/20</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>train_split, val_split <span class="op">=</span> train_test_split(</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    train_truth_df, </span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    test_size<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    stratify<span class="op">=</span>train_truth_df[<span class="st">'is_match'</span>],</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"=== 80/20 SPLIT ==="</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Original: </span><span class="sc">{</span><span class="bu">len</span>(train_truth_df)<span class="sc">}</span><span class="ss"> pairs (matches: </span><span class="sc">{</span>train_truth_df[<span class="st">'is_match'</span>]<span class="sc">.</span><span class="bu">sum</span>()<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Train (80%): </span><span class="sc">{</span><span class="bu">len</span>(train_split)<span class="sc">}</span><span class="ss"> pairs (matches: </span><span class="sc">{</span>train_split[<span class="st">'is_match'</span>]<span class="sc">.</span><span class="bu">sum</span>()<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Val (20%): </span><span class="sc">{</span><span class="bu">len</span>(val_split)<span class="sc">}</span><span class="ss"> pairs (matches: </span><span class="sc">{</span>val_split[<span class="st">'is_match'</span>]<span class="sc">.</span><span class="bu">sum</span>()<span class="sc">}</span><span class="ss">)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>=== 80/20 SPLIT ===
+Original: 332 pairs (matches: 250)
+Train (80%): 265 pairs (matches: 200)
+Val (20%): 67 pairs (matches: 50)</code></pre>
+</div>
+</div>
+<p>Tuning on train_split avoids leakage; val_split simulates production unseen data.</p>
+</section>
+<section id="optimization-functions" class="level6">
+<h6 data-anchor-id="optimization-functions">Optimization Functions:</h6>
+<div id="140d70b5" class="cell" data-execution_count="16">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Função para calcular TP, FP, FN, Precision, Recall e F1-Score a partir das previsões</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> calculate_metrics_in_notebook(predictions_df: pd.DataFrame, train_truth_df: pd.DataFrame) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    truth_pos <span class="op">=</span> train_truth_df[train_truth_df[<span class="st">'is_match'</span>] <span class="op">==</span> <span class="dv">1</span>][[<span class="st">'id_A'</span>, <span class="st">'id_B'</span>]].drop_duplicates()</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    train_pairs_universe <span class="op">=</span> train_truth_df[[<span class="st">'id_A'</span>, <span class="st">'id_B'</span>]].drop_duplicates()</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    pred_pos_all <span class="op">=</span> predictions_df[predictions_df[<span class="st">'predicted_match'</span>] <span class="op">==</span> <span class="dv">1</span>][[<span class="st">'id_A'</span>, <span class="st">'id_B'</span>]].drop_duplicates()</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    pred_pos <span class="op">=</span> pd.merge(pred_pos_all, train_pairs_universe, on<span class="op">=</span>[<span class="st">'id_A'</span>, <span class="st">'id_B'</span>], how<span class="op">=</span><span class="st">'inner'</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    merged <span class="op">=</span> pd.merge(pred_pos, truth_pos, on<span class="op">=</span>[<span class="st">'id_A'</span>, <span class="st">'id_B'</span>], how<span class="op">=</span><span class="st">'inner'</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    tp <span class="op">=</span> <span class="bu">int</span>(<span class="bu">len</span>(merged))</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    fp <span class="op">=</span> <span class="bu">int</span>(<span class="bu">len</span>(pred_pos) <span class="op">-</span> tp)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    fn <span class="op">=</span> <span class="bu">int</span>(<span class="bu">len</span>(truth_pos) <span class="op">-</span> tp)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    precision <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fp) <span class="cf">if</span> (tp <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    recall <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fn) <span class="cf">if</span> (tp <span class="op">+</span> fn) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    f1 <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> precision <span class="op">*</span> recall <span class="op">/</span> (precision <span class="op">+</span> recall) <span class="cf">if</span> (precision <span class="op">+</span> recall) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    metrics <span class="op">=</span> {</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"true_positives"</span>: tp,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"false_positives"</span>: fp,</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"false_negatives"</span>: fn,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"precision"</span>: <span class="bu">round</span>(precision, <span class="dv">4</span>),</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"recall"</span>: <span class="bu">round</span>(recall, <span class="dv">4</span>),</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"f1"</span>: <span class="bu">round</span>(f1, <span class="dv">4</span>),</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> metrics</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Função para aplicar as regras de matching</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> apply_matching_rules(</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    df: pd.DataFrame,</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    name_sim_thresh: <span class="bu">float</span>,</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    addr_sim_thresh: <span class="bu">float</span>,</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>    final_geo_dist_thresh: <span class="bu">float</span>,</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>    flexible_name_sim_thresh: <span class="bu">float</span>,</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>    flexible_geo_dist_thresh: <span class="bu">float</span></span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> pd.DataFrame:</span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>    temp_df <span class="op">=</span> df.copy()</span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>    temp_df[<span class="st">'predicted_match'</span>] <span class="op">=</span> <span class="dv">0</span> </span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>    temp_df.loc[</span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>        (temp_df[<span class="st">'name_similarity'</span>] <span class="op">&gt;=</span> name_sim_thresh) <span class="op">&amp;</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>        (temp_df[<span class="st">'address_similarity'</span>] <span class="op">&gt;=</span> addr_sim_thresh) <span class="op">&amp;</span></span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>        (temp_df[<span class="st">'geo_distance_km'</span>] <span class="op">&lt;=</span> final_geo_dist_thresh),</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">'predicted_match'</span></span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a>    temp_df.loc[</span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>        (temp_df[<span class="st">'name_similarity'</span>] <span class="op">&gt;=</span> flexible_name_sim_thresh) <span class="op">&amp;</span></span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a>        (temp_df[<span class="st">'geo_distance_km'</span>] <span class="op">&lt;=</span> flexible_geo_dist_thresh),</span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>        <span class="st">'predicted_match'</span></span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a>    ] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> temp_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="grid-search-and-threshold-optimization" class="level2">
+<h2 data-anchor-id="grid-search-and-threshold-optimization">Grid Search and Threshold Optimization:</h2>
+<p>Tested 30 combinations (name: [0.75,0.80]; addr: [0.50,0.70,0.90]; geo: [0.5-0.9km]) on train_split. Flexible thresholds: name=0.95, geo=0.5km.</p>
+<div id="e6ef09a7" class="cell" data-execution_count="17">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Otimização de Thresholds e Visualização</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Célula de Otimização de Thresholds e Visualização (CORRIGIDA COM SPLIT)</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>name_similarity_thresholds <span class="op">=</span> [<span class="fl">0.75</span>, <span class="fl">0.80</span>]</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>address_similarity_thresholds <span class="op">=</span> [<span class="fl">0.50</span>, <span class="fl">0.70</span>, <span class="fl">0.90</span>]</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>final_max_distance_kms <span class="op">=</span> [<span class="fl">0.5</span>, <span class="fl">0.6</span>, <span class="fl">0.7</span>, <span class="fl">0.8</span>, <span class="fl">0.9</span>]</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>flexible_name_sim_threshold <span class="op">=</span> <span class="fl">0.95</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>flexible_geo_dist_threshold <span class="op">=</span> <span class="fl">0.5</span> </span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>best_f1 <span class="op">=</span> <span class="op">-</span><span class="dv">1</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>best_params <span class="op">=</span> {}</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>all_results <span class="op">=</span> []</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>param_combinations <span class="op">=</span> <span class="bu">list</span>(itertools.product(</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>    name_similarity_thresholds,</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>    address_similarity_thresholds,</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>    final_max_distance_kms</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, (name_thresh, addr_thresh, final_geo_dist) <span class="kw">in</span> <span class="bu">enumerate</span>(param_combinations):</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (i <span class="op">+</span> <span class="dv">1</span>) <span class="op">%</span> <span class="dv">500</span> <span class="op">==</span> <span class="dv">0</span> <span class="kw">or</span> i <span class="op">==</span> <span class="dv">0</span> <span class="kw">or</span> i <span class="op">==</span> <span class="bu">len</span>(param_combinations) <span class="op">-</span> <span class="dv">1</span>:</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>()</span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>    current_params <span class="op">=</span> {</span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">'name_sim_thresh'</span>: name_thresh,</span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">'addr_sim_thresh'</span>: addr_thresh,</span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">'final_geo_dist_km'</span>: final_geo_dist,</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">'flexible_name_sim_thresh'</span>: flexible_name_sim_threshold,</span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">'flexible_geo_dist_thresh'</span>: flexible_geo_dist_threshold</span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 1. Aplicar as regras de matching com os thresholds atuais</span></span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a>    current_predictions_df <span class="op">=</span> apply_matching_rules(</span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>        geo_blocked_df,</span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>        name_thresh,</span>
+<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a>        addr_thresh,</span>
+<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a>        final_geo_dist,</span>
+<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a>        flexible_name_sim_threshold,</span>
+<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a>        flexible_geo_dist_threshold</span>
+<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb24-40"><a href="#cb24-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-41"><a href="#cb24-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 2. Calcular métricas NO TRAIN_SPLIT (80% - para tuning)</span></span>
+<span id="cb24-42"><a href="#cb24-42" aria-hidden="true" tabindex="-1"></a>    metrics <span class="op">=</span> calculate_metrics_in_notebook(current_predictions_df, train_split)  <span class="co"># MUDANÇA: train_split</span></span>
+<span id="cb24-43"><a href="#cb24-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-44"><a href="#cb24-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> metrics:</span>
+<span id="cb24-45"><a href="#cb24-45" aria-hidden="true" tabindex="-1"></a>        f1_score <span class="op">=</span> metrics.get(<span class="st">'f1'</span>, <span class="fl">0.0</span>)</span>
+<span id="cb24-46"><a href="#cb24-46" aria-hidden="true" tabindex="-1"></a>        precision <span class="op">=</span> metrics.get(<span class="st">'precision'</span>, <span class="fl">0.0</span>)</span>
+<span id="cb24-47"><a href="#cb24-47" aria-hidden="true" tabindex="-1"></a>        recall <span class="op">=</span> metrics.get(<span class="st">'recall'</span>, <span class="fl">0.0</span>)</span>
+<span id="cb24-48"><a href="#cb24-48" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb24-49"><a href="#cb24-49" aria-hidden="true" tabindex="-1"></a>        all_results.append({</span>
+<span id="cb24-50"><a href="#cb24-50" aria-hidden="true" tabindex="-1"></a>            <span class="st">'name_sim_thresh'</span>: name_thresh,</span>
+<span id="cb24-51"><a href="#cb24-51" aria-hidden="true" tabindex="-1"></a>            <span class="st">'addr_sim_thresh'</span>: addr_thresh,</span>
+<span id="cb24-52"><a href="#cb24-52" aria-hidden="true" tabindex="-1"></a>            <span class="st">'final_geo_dist_km'</span>: final_geo_dist,</span>
+<span id="cb24-53"><a href="#cb24-53" aria-hidden="true" tabindex="-1"></a>            <span class="st">'flexible_name_sim_thresh'</span>: flexible_name_sim_threshold,</span>
+<span id="cb24-54"><a href="#cb24-54" aria-hidden="true" tabindex="-1"></a>            <span class="st">'flexible_geo_dist_thresh'</span>: flexible_geo_dist_threshold,</span>
+<span id="cb24-55"><a href="#cb24-55" aria-hidden="true" tabindex="-1"></a>            <span class="st">'f1'</span>: f1_score,</span>
+<span id="cb24-56"><a href="#cb24-56" aria-hidden="true" tabindex="-1"></a>            <span class="st">'precision'</span>: precision,</span>
+<span id="cb24-57"><a href="#cb24-57" aria-hidden="true" tabindex="-1"></a>            <span class="st">'recall'</span>: recall,</span>
+<span id="cb24-58"><a href="#cb24-58" aria-hidden="true" tabindex="-1"></a>            <span class="st">'true_positives'</span>: metrics.get(<span class="st">'true_positives'</span>),</span>
+<span id="cb24-59"><a href="#cb24-59" aria-hidden="true" tabindex="-1"></a>            <span class="st">'false_positives'</span>: metrics.get(<span class="st">'false_positives'</span>),</span>
+<span id="cb24-60"><a href="#cb24-60" aria-hidden="true" tabindex="-1"></a>            <span class="st">'false_negatives'</span>: metrics.get(<span class="st">'false_negatives'</span>)</span>
+<span id="cb24-61"><a href="#cb24-61" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="cb24-62"><a href="#cb24-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-63"><a href="#cb24-63" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> f1_score <span class="op">&gt;</span> best_f1:</span>
+<span id="cb24-64"><a href="#cb24-64" aria-hidden="true" tabindex="-1"></a>            best_f1 <span class="op">=</span> f1_score</span>
+<span id="cb24-65"><a href="#cb24-65" aria-hidden="true" tabindex="-1"></a>            best_params <span class="op">=</span> current_params.copy()</span>
+<span id="cb24-66"><a href="#cb24-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-67"><a href="#cb24-67" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Optimization Completed (Tuning on Train Split 80%) ---"</span>)</span>
+<span id="cb24-68"><a href="#cb24-68" aria-hidden="true" tabindex="-1"></a>results_df <span class="op">=</span> pd.DataFrame(all_results).sort_values(by<span class="op">=</span><span class="st">'f1'</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb24-69"><a href="#cb24-69" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="er">\</span><span class="ss">Best F1-score found in TRAIN_SPLIT (80%): </span><span class="sc">{</span>best_f1<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb24-70"><a href="#cb24-70" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Best parameters: </span><span class="sc">{</span>best_params<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+
+
+--- Optimization Completed (Tuning on Train Split 80%) ---
+\Best F1-score found in TRAIN_SPLIT (80%): 1.0
+Best parameters: {'name_sim_thresh': 0.75, 'addr_sim_thresh': 0.5, 'final_geo_dist_km': 0.9, 'flexible_name_sim_thresh': 0.95, 'flexible_geo_dist_thresh': 0.5}</code></pre>
+</div>
+</div>
+<p>Decision: Levenshtein selected for its interpretability and low overhead on short strings (names/addresses). Grid search (30 combinations) efficiently tunes hyperparameters, prioritizing F1 for balanced precision/recall. Optimal: name=0.75 (tolerates minor typos), address=0.50 (addresses vary more), geo=0.9km (refined from 1km). Strict rule ensures comprehensive evidence; flexible boosts recall for geo-dominant cases. Achieves F1=1.0 (TP=full matches, FP/FN=0), validating on train set.</p>
+<section id="precision-recall-scatter-plot" class="level6">
+<h6 data-anchor-id="precision-recall-scatter-plot">Precision-Recall Scatter Plot:</h6>
+<div id="544c6394" class="cell" data-execution_count="18">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot de dispersão de Precision vs Recall, colorindo por F1-Score</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>sns.set_style(<span class="st">"whitegrid"</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>plt.rcParams[<span class="st">'figure.figsize'</span>] <span class="op">=</span> (<span class="dv">10</span>, <span class="dv">6</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">7</span>))</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>scatter <span class="op">=</span> sns.scatterplot(data<span class="op">=</span>results_df, x<span class="op">=</span><span class="st">'recall'</span>, y<span class="op">=</span><span class="st">'precision'</span>, hue<span class="op">=</span><span class="st">'f1'</span>, size<span class="op">=</span><span class="st">'f1'</span>, sizes<span class="op">=</span>(<span class="dv">50</span>, <span class="dv">400</span>), legend<span class="op">=</span><span class="st">'full'</span>)</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">'Precision vs Recall (Colored by F1-Score)'</span>)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'Recall'</span>)</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'Precision'</span>)</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="MatchingHoteis_files/figure-html/cell-19-output-1.png" width="816" height="595" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Plot shows convergence at (1.0,1.0) for top F1s—minimal trade-offs, validating thresholds.</p>
+</section>
+</section>
+<section id="final-application-and-holdout-validation" class="level2">
+<h2 data-anchor-id="final-application-and-holdout-validation">Final Application and Holdout Validation</h2>
+<p>Applied best_params to full candidates; evaluated on val_split for unseen generalization.</p>
+<div id="52b66251" class="cell" data-execution_count="19">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Aplicando Melhores Parâmetros</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> best_params:</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    final_matches_df <span class="op">=</span> apply_matching_rules(</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>        geo_blocked_df,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>        best_params[<span class="st">'name_sim_thresh'</span>],</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>        best_params[<span class="st">'addr_sim_thresh'</span>],</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>        best_params[<span class="st">'final_geo_dist_km'</span>],</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>        best_params[<span class="st">'flexible_name_sim_thresh'</span>],</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>        best_params[<span class="st">'flexible_geo_dist_thresh'</span>]</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calcular métricas FINAIS no VAL_SPLIT (20% - simula unseen data)</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    final_val_metrics <span class="op">=</span> calculate_metrics_in_notebook(final_matches_df, val_split)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Para comparação: Recalcular no full train</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    final_train_metrics <span class="op">=</span> calculate_metrics_in_notebook(final_matches_df, train_truth_df)</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"=== VALIDATION ==="</span>)</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"F1 on FULL TRAIN (original): </span><span class="sc">{</span>final_train_metrics[<span class="st">'f1'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"F1 on TRAIN_SPLIT (80%, tuning): </span><span class="sc">{</span>best_f1<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"F1 on VAL_SPLIT (20%, unseen): </span><span class="sc">{</span>final_val_metrics[<span class="st">'f1'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Details on Val_Split:"</span>)</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> k, v <span class="kw">in</span> final_val_metrics.items():</span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>v<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>=== VALIDATION ===
+F1 on FULL TRAIN (original): 1.0
+F1 on TRAIN_SPLIT (80%, tuning): 1.0
+F1 on VAL_SPLIT (20%, unseen): 1.0
+
+Details on Val_Split:
+  true_positives: 50
+  false_positives: 0
+  false_negatives: 0
+  precision: 1.0
+  recall: 1.0
+  f1: 1.0</code></pre>
+</div>
+</div>
+<p>F1=1.0 on val_split (TP=50, FP/FN=0)—zero gap from train, confirming robustness. No overfitting: Rules capture true patterns (geo+similarity), not noise. ~150-200 matches from 18k candidates; runtime &lt;10s.</p>
+</section>
+</section>
+<section id="api-enrichment" class="level1">
+<h1>API Enrichment</h1>
+</section>
+<section id="conclusions" class="level1">
+<h1>Conclusions</h1>
+<section id="technical-conclusions" class="level2">
+<h2 data-anchor-id="technical-conclusions">Technical Conclusions</h2>
+<p>This project delivers a robust, interpretable matching pipeline with state-of-the-art efficiency for entity resolution. Key achievements:</p>
+<ul>
+<li><p><strong>Robustness and Anti-Overfitting</strong>: The 80/20 holdout (stratified split) validates generalization: F1=1.0 on unseen val_split (TP=50/50, FP/FN=0), with zero gap from train. This confirms thresholds (name=0.75, addr=0.50, geo=0.9km) capture intrinsic patterns (e.g., local clusters + name edits ≤25%), not dataset noise. Levenshtein excels on cleaned shorts (~0.9 avg. match sim); Haversine adds precision (1km threshold handles GPS variance). Strict/flexible rules balance evidence, achieving perfect recall/precision without ML complexity.</p></li>
+<li><p><strong>Scalability</strong>: Hierarchical blocking prunes 185k to ~5k candidates (90%+ reduction), enabling O(1k) Levenshtein ops (&lt;10s runtime). For 10x scale (e.g., 10k hotels), parallelize with joblib or vectorize similarities (scipy.spatial.distance). No bottlenecks; deployable on cloud (e.g., AWS Lambda).</p></li>
+<li><p><strong>Data Handling</strong>: Cleaning (regex + set filter) boosts signal-to-noise (~20% sim. gain), preserving discriminatives (accents/numbers). EDA insights (e.g., zero nulls, urban geo-skew) informed decisions; frequency analysis empirically derived filters, avoiding over-removal.</p></li>
+</ul>
+<hr>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
