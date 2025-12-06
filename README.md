@@ -29,7 +29,7 @@ This pipeline simulates hospitality data unification, enabling duplicate detecti
 2. **Preprocessing**: Normalize text (lowercase, punctuation removal, generic filtering) to create cleaned columns for robust similarity computation.
 3. **Candidate Generation (Blocking)**: Hierarchical pruning—textual (city-country keys) reduces pairs by 90%; geographic (Haversine ≤1km) further cuts 70-80%, avoiding O(n²) (185k+ pairs).
 4. **Similarity Computation**: Levenshtein ratio on cleaned names/addresses for geo-blocked candidates (~5k pairs).
-5. **Threshold Optimization**: Grid search (30 combinations) on 80/20 train/validation split maximizes F1-score (precision/recall harmonic); flexible rules handle edge cases.
+5. **Threshold Optimization**: Grid search on 80/20 train/validation split maximizes F1-score (precision/recall harmonic); flexible rules handle edge cases.
 6. **Entity Matching**: Apply optimized rules (strict: name≥0.75, address≥0.50, geo≤0.9km; flexible: name≥0.95, geo≤0.5km) for binary predictions (`predicted_match` 0/1).
 7. **API Enrichment**: POST unique matches to mock `/enrich` endpoint; merge stars, scores, amenities into final CSV.
 8. **Evaluation**: Perfect F1=1.0 (TP=full, FP/FN=0) on unseen validation; runtime <10s.
@@ -41,12 +41,6 @@ The pipeline achieves **perfect accuracy (F1=1.0)** on validation, with ~150-200
 - **Efficiency**: Textual blocking prunes 90% (city-country focus captures location-bound duplicates); geographic adds precision, filtering distant pairs (e.g., same city but >1km unlikely matches).
 - **Accuracy Drivers**: Levenshtein tolerates noise (e.g., "Paulista" vs. "Pça. Paulista"); flexible rules catch 10-15% geo-dominant cases (e.g., exact names, minor address typos). No overfitting (val F1 matches train).
 - **Enrichment Value**: Adds actionable data (e.g., 70% matches have "wifi/pool"); simulates real APIs for features like amenity-based filtering ("spa hotels near me").
-
-**Strategic Recommendations**:
-- **Hospitality Platforms**: Automate deduplication to unify catalogs, reducing search errors and boosting conversions (e.g., accurate availability/pricing).
-- **Scalability**: Parallelize Levenshtein (Joblib) for 1M+ records; cache API responses (Redis) to cut costs.
-- **Extensions**: Hybrid ML (XGBoost on features) for ambiguous pairs; integrate real APIs (TripAdvisor) for production.
-- **Impact**: Cuts manual review by 90%, enables personalized upsells (e.g., "enriched spa packages"), and supports urban biases (e.g., 60% matches in São Paulo/Rio).
 
 ## Repository Content
 
@@ -70,7 +64,6 @@ The pipeline achieves **perfect accuracy (F1=1.0)** on validation, with ~150-200
   1. Install deps: `pip install -r requirements.txt`.
   2. Start mock API: `uvicorn scripts.mock_api:app --host 0.0.0.0 --port 8000` (new terminal).
   3. Execute: `python scripts/hotel_matching_pipeline_gabrielferreira.py`—generates `output.csv` and `output_final_enriquecido.csv`.
-  4. Evaluate: `python evaluate.py --pred output.csv --truth data/train.csv --out metrics.json`.
 
 ## License
 
